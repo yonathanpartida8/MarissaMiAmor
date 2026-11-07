@@ -8,6 +8,7 @@
 import { el } from "../ui.js";
 import { vibrar } from "../../integraciones/plataforma.js";
 import { COSAS_MANO, RECETAS, baseDe } from "./catalogo/index.js";
+import { bocados3d } from "./comer.js";
 
 export const BOCADOS = 3;
 const hayComida = (p) => !!(p && RECETAS[p.k] && (p.b | 0) > 0);
@@ -38,7 +39,9 @@ export function pintarPlatos(r) {
       r.platosN.append(n);
     }
     n.style.left = x - 22 + "px"; n.style.top = y - 24 + "px";
+    if (n.dataset.b !== String(Math.min(BOCADOS, p.b | 0))) n.style.removeProperty("--come");
     n.dataset.b = String(Math.min(BOCADOS, p.b | 0));
+    n.style.setProperty("--migaja", rc.color);
   });
 }
 
@@ -125,15 +128,18 @@ export async function comerEnMesa(j, r) {
   platosDe(r).forEach((p, k) => { if (!hayComida(p)) return; const dd = Math.abs(lugarPlato(r, k) - m.gx); if (dd < d) { d = dd; i = k; } });
   if (i < 0) { j.decir("Ya no hay comida en la mesa", false); return; }
   const comida = platosDe(r)[i].k, sitio = m.mueble;
+  if (m._comiendo) return;
   j._mirar(m, lugarPlato(r, i) - m.gx);
   j._mandarYo({ mira: m.mira, ev: { k: "comemesa", t: r.o.id } });
   juntosEnMesa(j, r);
-  m.n.classList.add("comiendo");
+  m._comiendo = true;
   try {
     for (;;) {
-      j.sonar("cuchara");
-      j.particulas("migaja", { gx: m.gx + 14 * m.mira, y: m.y - 64 }, 0, 0, 2);
-      await j.esperar(950);
+      // (Fase 73) Cada porción son dos bocados de verdad (comer.js); el plato se va vaciando con cada uno.
+      const r0 = j.objs.get(r.o.id), p0 = r0 && platosDe(r0)[i];
+      if (!j.vivo || !r0 || m.mueble !== sitio || !hayComida(p0) || p0.k !== comida) return;
+      const platoN = r0.platosN?.querySelector(`:scope > [data-i="${i}"]:not(.se-acaba)`);
+      await bocados3d(j, m, { n: 2, platoN, color: RECETAS[comida]?.color, sigue: () => j.vivo && m.mueble === sitio, alBocado: (s) => { j.sonar("cuchara"); platoN?.style.setProperty("--come", ((BOCADOS - (p0.b | 0)) + (s + 1) / 2) / BOCADOS); } });
       const rr = j.objs.get(r.o.id);
       if (!j.vivo || !rr || m.mueble !== sitio) return;
       const p = platosDe(rr)[i];
@@ -148,7 +154,7 @@ export async function comerEnMesa(j, r) {
         return;
       }
     }
-  } finally { m.n.classList.remove("comiendo"); }
+  } finally { m._comiendo = false; }
 }
 
 /** Tocar una mesa: si traes un platillo, se sirve; si hay comida, a comer; si no, a sentarse. */
@@ -167,12 +173,16 @@ export function laPareja(j, ev, espera) {
   const m = j.suyo;
   if (ev.k !== "comemesa") return;
   setTimeout(() => {
-    if (!j.vivo) return;
-    m.n.classList.add("comiendo");
-    clearTimeout(m.tcome);
-    m.tcome = setTimeout(() => m.n.classList.remove("comiendo"), BOCADOS * 950 + 200);
-    if (j._visible(m)) j.sonar("cuchara", { volumen: 0.6 });
+    if (!j.vivo || m._comiendo) return;
     const r = j.objs.get(ev.t);
     if (r) juntosEnMesa(j, r);
+    if (!r || !j._visible(m)) return;
+    // (Fase 73) Su monito come igual que el tuyo (sus bocados, su plato que se vacía), mientras siga sentado ahí.
+    let i = -1, d = 1e9;
+    platosDe(r).forEach((p, k) => { if (!hayComida(p)) return; const dd = Math.abs(lugarPlato(r, k) - m.gx); if (dd < d) { d = dd; i = k; } });
+    if (i < 0) return;
+    const platoN = r.platosN?.querySelector(`:scope > [data-i="${i}"]:not(.se-acaba)`), sitio = m.mueble;
+    m._comiendo = true;
+    bocados3d(j, m, { n: BOCADOS * 2, platoN, color: RECETAS[platosDe(r)[i].k]?.color, sigue: () => j.vivo && m.mueble === sitio && hayComida(platosDe(j.objs.get(ev.t))[i]), alBocado: () => j.sonar("cuchara", { volumen: 0.5 }) }).finally(() => { m._comiendo = false; });
   }, espera + 420);
 }

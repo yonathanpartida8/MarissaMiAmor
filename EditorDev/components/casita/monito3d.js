@@ -20,7 +20,9 @@ import { rasterizar, ELEV_GIRO as E } from "./girar.js";
 const CW = 25, R0 = -6, FILAS = 47, CEL = 3.52;   // (un cuadrito del monito mide 3.52 en el mundo: 100 → 88)
 const MODELOS = new Map(), CUADROS = new Map();
 const OCULTO = ".ca-sombra,.ca-contacto,.ca-sienta,.ca-sienta-lado,.ca-mano-cosa,.ca-mano-larga,.ojo-f,.ojo-z,.ojo-c,.ojo-s,.ojo-g,.bo-a,.bo-o,.bo-b,.bo-t,.ca-cejas-e,.ca-cuchara";
-const CARAS = { normal: "", dormido: ".ojo-n{display:none!important}.ojo-z{display:inline!important}", feliz: ".ojo-n{display:none!important}.ojo-f{display:inline!important}.bo-n{display:none!important}.bo-a{display:inline!important}" };
+const CARAS = { normal: "", dormido: ".ojo-n{display:none!important}.ojo-z{display:inline!important}", feliz: ".ojo-n{display:none!important}.ojo-f{display:inline!important}.bo-n{display:none!important}.bo-a{display:inline!important}",
+  // (Fase 73) Comiendo: la boquita abierta (para morder y masticar).
+  come: ".bo-n{display:none!important}.bo-a{display:none!important}.bo-o{display:inline!important}" };
 const VISTAS = { frente: ".ca-lado-solo,.ca-atras-solo", lado: ".ca-frente-solo,.ca-atras-solo", atras: ".ca-lado-solo,.ca-frente-solo" };
 const PARTES = {
   cabeza: "svg>:not(.ca-cabeza):not(.ca-pelo-tras)",
@@ -62,11 +64,12 @@ export function modelo(ropa) {
     const svg = monitoSVG(ropa || {}), R = { ...ropaDe(""), ...(ropa || {}) };
     // (Fase 67) La cabeza ya no es de cubitos: son los dibujos pixel de la cabeza (de frente, de tres cuartos y de
     // espaldas, con su carita y su peinado tal cual), y se escoge el que toca según hacia dónde ve el monito.
-    const [hF, hFz, hFf, hL, hLz, hLf, hA, cu, bi, bd, pi, pd] = await Promise.all([
+    const [hF, hFz, hFf, hL, hLz, hLf, hA, cu, bi, bd, pi, pd, hFc, hLc] = await Promise.all([
       celdas(svg, "frente", "cabeza", "normal", false), celdas(svg, "frente", "cabeza", "dormido", false), celdas(svg, "frente", "cabeza", "feliz", false),
       celdas(svg, "lado", "cabeza", "normal", false), celdas(svg, "lado", "cabeza", "dormido", false), celdas(svg, "lado", "cabeza", "feliz", false),
       celdas(svg, "atras", "cabeza", "normal", false),
       celdas(svg, "frente", "cuerpo"), celdas(svg, "frente", "bi"), celdas(svg, "frente", "bd"), celdas(svg, "frente", "pi"), celdas(svg, "frente", "pd"),
+      celdas(svg, "frente", "cabeza", "come", false), celdas(svg, "lado", "cabeza", "come", false),
     ]);
     const en = (L, c, r) => (c < 0 || r < 0 || c >= CW || r >= FILAS ? null : L[r * CW + c]);
     // De tres cuartos por detrás: la nuca de espaldas, con la orilla del cachete y la orejita del lado que se asoma.
@@ -77,7 +80,7 @@ export function modelo(ropa) {
       for (let c = 16; c <= 19; c++) { const f = en(hF, c, r); if (f && (esPiel(f) || !en(hA, c, r))) a34[r * CW + c] = f; }
       for (let c = 4; c <= 7; c++) { const a = en(hA, c, r); if (esPiel(a)) a34[r * CW + c] = en(hA, c + 1, r) && !esPiel(en(hA, c + 1, r)) ? en(hA, c + 1, r) : en(hA, c + 2, r) || a; }
     }
-    const cabezas = { frente: { normal: hF, dormido: hFz, feliz: hFf }, tres: { normal: hL, dormido: hLz, feliz: hLf }, espalda34: { normal: a34 }, espalda: { normal: hA } };
+    const cabezas = { frente: { normal: hF, dormido: hFz, feliz: hFf, come: hFc }, tres: { normal: hL, dormido: hLz, feliz: hLf, come: hLc }, espalda34: { normal: a34 }, espalda: { normal: hA } };
     const vox = [];   // { x, y, z, h (hueso), c: [frente, atrás, izq, der, arriba, abajo] }
     const pon = (x, y, z, h, c, cz = null) => vox.push({ x, y, z, h, c, cz });
     const zc = 5;
@@ -145,8 +148,15 @@ const doblar = (p, jy, jz, g) => { if (!g) return; const c = Math.cos(rad(g)), s
  *   o.vg: la vista del mueble (girar.js) para que lo de enfrente lo tape · o.cara: "normal" o "dormido"
  *   Devuelve { url, x, y, w, h }: dónde va la imagen en el cuadro de la vista del mueble (en el mundo).
  */
+/** (Fase 73) Dónde está el hombro derecho (de lado a lado): el centro de lo de arriba de su brazo. */
+function hombroX(M) {
+  let y0 = 1e9, sx = 0, n = 0;
+  for (const v of M.vox) if (v.h === "bd" && v.y < y0) y0 = v.y;
+  for (const v of M.vox) if (v.h === "bd" && v.y <= y0 + 1) { sx += v.x; n++; }
+  return n ? sx / n + 0.5 : 8;
+}
 export function pintar(M, pose, o) {
-  const clave = [o.clave, pose.muslo, pose.rodilla, pose.brazo, pose.tronco, pose.rodar, o.g, o.yaw, o.ancla.map((v) => v.toFixed(1)).join(","), o.ancla3d, o.cel.toFixed(2), o.cara, o.vg?.g ?? "-", o.vg ? o.vg.OW + "x" + o.vg.OH : ""].join("|");
+  const clave = [o.clave, pose.muslo, pose.rodilla, pose.brazo, pose.brazoD ?? "", pose.brazoDz ?? 0, pose.cabezaY ?? 0, pose.tronco, pose.rodar, o.g, o.yaw, o.ancla.map((v) => v.toFixed(1)).join(","), o.ancla3d, o.cel.toFixed(2), o.cara, o.vg?.g ?? "-", o.vg ? o.vg.OW + "x" + o.vg.OH : ""].join("|");
   if (CUADROS.has(clave)) return CUADROS.get(clave);
   const cel = o.cel, co = Math.cos(rad(o.g)), si = Math.sin(rad(o.g)), cy = Math.cos(rad(o.yaw || 0)), sy = Math.sin(rad(o.yaw || 0));
   const ax = 12, ay = o.ancla3d === "centro" ? M.centro : M.cadera, az = M.zc;
@@ -155,7 +165,16 @@ export function pintar(M, pose, o) {
     // Los huesos (en cuadritos del monito): rodilla, cadera, hombro; luego el cuerpo se inclina sobre la cadera.
     if (h === "ci" || h === "cd") doblar(p, ky, hz, -pose.rodilla);
     if (h[0] === "m" || h[0] === "c") doblar(p, hy, hz, pose.muslo);
-    if (h === "bi" || h === "bd") doblar(p, sh, hz, pose.brazo);
+    // (Fase 73) El brazo derecho se puede mover aparte (para comer: baja al plato y sube a la boca).
+    if (h === "bi") doblar(p, sh, hz, pose.brazo);
+    if (h === "bd") {
+      doblar(p, sh, hz, pose.brazoD ?? pose.brazo);
+      // (Fase 73) …y girar de lado (hacia la cara): así de frente se ve que la mano sube a la boca.
+      if (pose.brazoDz) {
+        const hx = M._hx ?? (M._hx = hombroX(M)), a = rad(pose.brazoDz * (hx < 12.5 ? -1 : 1)), c = Math.cos(a), s = Math.sin(a), dx = p[0] - hx, dy = p[1] - sh;
+        p[0] = hx + dx * c - dy * s; p[1] = sh + dx * s + dy * c;
+      }
+    }
     if (h === "t" || h === "bi" || h === "bd") doblar(p, hy, hz, pose.tronco);
     // Acostarse de ladito: rueda sobre su centro (la cabeza hacia la izquierda con -90).
     if (pose.rodar) { const c = Math.cos(rad(pose.rodar)), s = Math.sin(rad(pose.rodar)), dx = p[0] - 12, dy = p[1] - M.centro; p[0] = 12 + dx * c - dy * s; p[1] = M.centro + dx * s + dy * c; }
@@ -199,7 +218,7 @@ export function pintar(M, pose, o) {
   const [vista, espejo] = phi <= 22.5 || phi > 337.5 ? ["frente", false] : phi <= 112.5 ? ["tres", false] : phi <= 157.5 ? ["espalda34", false] : phi <= 202.5 ? ["espalda", false] : phi <= 247.5 ? ["espalda34", true] : ["tres", true];
   const caras = M.cabezas[vista], cab = caras[o.cara] || caras.normal;
   const n0 = [12.5, M.cuello, M.zc + 0.5]; xr(n0, "t");
-  const [Xn, Yn, Zn] = alMundo(n0), rr = (Math.round((pose.rodar || 0) / 90) * 90 * Math.PI) / 180, rc = Math.round(Math.cos(rr)), rs = Math.round(Math.sin(rr));
+  const [Xn, Yn0, Zn] = alMundo(n0), Yn = Yn0 + (pose.cabezaY || 0) * cel, rr = (Math.round((pose.rodar || 0) / 90) * 90 * Math.PI) / 180, rc = Math.round(Math.cos(rr)), rs = Math.round(Math.sin(rr));
   const celdasCab = [];
   for (let r = 0; r < FILAS; r++) for (let c = 0; c < CW; c++) {
     const col = cab[r * CW + c];

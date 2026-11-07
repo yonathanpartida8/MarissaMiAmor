@@ -2062,3 +2062,18 @@ body.ca-escribiendo .jt-nav { display: none; }
 @keyframes caRevuelveLado { 0%, 100% { transform: rotate(-104deg); } 50% { transform: rotate(-86deg); } }
 @keyframes caRevuelveCodo { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(16deg); } }
 @keyframes caMiraOlla { 0%, 100% { translate: 0 1px; } 50% { translate: 1px 2px; } }
+/* (Fase 73) Comer bocado por bocado: la cabeza sigue la comida, la boca muerde y mastica, los ojitos saborean. */
+.ca-monito.come73 :is(.ca-cabeza, .ca-pelo-tras) { translate: var(--hx, 0px) var(--hy, 0px); }
+.ca-monito.come73 .ca-bd { animation: none !important; }
+.ca-monito.come73:is(.muerde, .mastica) :is(.bo-n, .bo-a) { display: none !important; }
+.ca-monito.come73.muerde .bo-o { display: inline; transform-origin: 62px 52px; transform: scaleY(1.8); }
+.ca-monito.come73.mastica .bo-o { display: inline; transform-origin: 62px 52px; animation: caMastica .14s steps(2) infinite alternate; }
+.ca-monito.come73.saborea .ojo-n { display: none !important; } .ca-monito.come73.saborea .ojo-f { display: inline !important; }
+.ca-monito.come73.con-cuchara .ca-cuchara { display: inline; }
+/* El bocadito que viaja a la boca: un cuadrito de la comida con su orillita. */
+.ca-bocadito { position: absolute; z-index: 40; pointer-events: none; background: var(--c); box-shadow: inset -2px -2px 0 rgba(0, 0, 0, .2), inset 2px 2px 0 rgba(255, 255, 255, .35), 0 0 0 1px rgba(74, 51, 70, .55); image-rendering: pixelated; }
+/* El plato se va vaciando con cada bocado (en escalones, como pixel) y le quedan migajitas. */
+.ca-plato[data-b="2"] { --come: .34; } .ca-plato[data-b="1"] { --come: .67; }
+.ca-plato:is([data-b="2"], [data-b="1"]) .ca-plato-comida { clip-path: none; }
+.ca-plato-comida { transform-origin: 50% 82%; transform: scale(calc(1 - var(--come, 0) * .62)); transition: transform .3s steps(3); }
+.ca-plato:not([data-b="3"]) .ca-plato-base::after { content: ""; position: absolute; left: 28%; top: 66%; width: 2px; height: 2px; background: var(--migaja, #c98a4a); box-shadow: 7px 2px 0 var(--migaja, #c98a4a), 13px -1px 0 var(--migaja, #c98a4a), 18px 3px 0 var(--migaja, #c98a4a); }

@@ -49,6 +49,7 @@ import { ICO } from "./iconos.js";
 import * as P from "./paneles.js";
 import { cocinar, pintarPlatos, laPareja } from "./mesa.js";
 import { Cocina } from "./cocina.js";
+import { bocadosPlanos, mordida } from "./comer.js";
 import { Mensajes } from "./mensajes.js";
 import { leerGfx, guardarGfx, nivel, maxParticulas, filtroPixel, crearCapaGL } from "./graficos.js";
 import { pintarFondo } from "./fondo.js";
@@ -1769,16 +1770,22 @@ export class Casita {
     if (mandar) this._mandarYo({ ev: { k: "gesto", t: k } });
   }
   emote(k) { this.gesto(this.yo, k); }
+  /** (Fase 73) Comer lo que traes: tres mordidas de verdad (mira, acerca, muerde, mastica, saborea) y a lo que traes
+   *  le van faltando pedacitos (comer.js). */
   comer() {
-    const m = this.yo, c = COSAS_MANO[m.lleva];
-    if (!c?.comible) return;
-    this.necesidades?.comio(m.lleva, !!c.plato);
+    const m = this.yo, k = m.lleva, c = COSAS_MANO[k];
+    if (!c?.comible || m._comiendo) return;
+    this.necesidades?.comio(k, !!c.plato);
     this._limpiarGestos(m);
-    m.n.classList.add("g-come");
-    this.sonar("comer");
-    this.particulas("migaja", { gx: m.gx + 18 * m.mira, y: m.y - 92 }, 0, 0, 4);
-    m.tgesto = setTimeout(() => { m.n.classList.remove("g-come"); this._ponerLleva(m, ""); this._mandarYo({ lleva: "" }); this._globo(m, "¡Qué rico!", 1800); }, 1600);
-    this._mandarYo({ ev: { k: "come", t: m.lleva } });
+    m._comiendo = true;
+    this._mandarYo({ ev: { k: "come", t: k } });
+    bocadosPlanos(this, m, { n: 3, lleva: true, color: RECETAS[k]?.color, sigue: () => this.vivo && m.lleva === k, alBocado: (i) => mordida(m.cuerpo.querySelector(".ca-mano-cosa svg"), i) }).then(() => {
+      m._comiendo = false;
+      if (!this.vivo || m.lleva !== k) return;
+      this._ponerLleva(m, ""); this._mandarYo({ lleva: "" });
+      this._globo(m, "¡Qué rico!", 1800);
+      this.particulas("corazon", { gx: m.gx, y: m.y - 130 }, 0, 0, 2);
+    });
   }
   /** Soltar lo que traes: se queda tirado en el piso (cae con su rebotito) y se recoge al tocarlo. */
   soltar(alBote = false, junto = null) {
@@ -2822,7 +2829,7 @@ export class Casita {
     else if (ev.k === "limpia") setTimeout(() => { m.n.classList.add("limpiando", "l-" + ev.t); setTimeout(() => m.n.classList.remove("limpiando", "l-" + ev.t), 1400); if (this._visible(m)) { this.particulas(ev.t === "trapear" ? "burbuja" : "polvo", { gx: m.gx + 26 * m.mira, y: m.y - 4 }, 0, 0, 4); this.sonar(ev.t === "aspirar" ? "viento" : "hojas", { volumen: 0.4 }); } }, espera);
     else if (ev.k === "traes") this.traes.evento(ev.t);
     else if (ev.k === "charco") { const [gx, y] = String(ev.t).split(",").map(Number); if (Number.isFinite(gx) && Number.isFinite(y)) setTimeout(() => { this.lluviaF?.chapoteo(gx, y); this.particulas("agua", { gx, y }, 0, -6, 4); if (this._visible(m)) this.sonar("charco", { volumen: 0.6 }); }, espera + 260); }
-    else if (ev.k === "come") { m.n.classList.add("g-come"); setTimeout(() => m.n.classList.remove("g-come"), 1600); if (this._visible(m)) this.sonar("comer", { volumen: 0.6 }); }
+    else if (ev.k === "come") { if (!m._comiendo && this._visible(m)) { m._comiendo = true; bocadosPlanos(this, m, { n: 3, lleva: true, color: RECETAS[ev.t]?.color, sigue: () => this.vivo, alBocado: (i) => mordida(m.cuerpo.querySelector(".ca-mano-cosa svg"), i) }).finally(() => { m._comiendo = false; }); } }
     else if (ev.k === "bailemos") { this.gesto(m, "baila", false); if (!yo.mueble) this.gesto(yo, "baila", false); this._globo(m, "¡Bailemos!", 1800); }
     else if (["abrazo", "beso", "choca", "manita", "cosquillas", "selfie", "empujar"].includes(ev.k)) setTimeout(() => { if (ev.k !== "empujar") this._mirar(m, yo.gx < m.gx ? -1 : 1); this._juntosHacer(ev.k, m, yo); }, espera);
     else if (ev.k === "regalo" && COSAS_MANO[ev.t]) {
