@@ -38,7 +38,7 @@ import { Vida } from "./vida.js";
 import { Fisica } from "./fisica.js";
 /** (Fase 68) El paso de los monitos (del mundo por segundo): caminando, trotando (viajes de más de TROTE_DESDE). */
 const VEL_PASO = 168, VEL_TROTE = 246, TROTE_DESDE = 640;
-import { giroDe, vistaGirada, vistaPlana, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
+import { giroDe, vistaGirada, vistaPlana, vistaPlanaYa, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
 import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -510,7 +510,12 @@ export class Casita {
     const pared = n.querySelector(":scope > .ca-pared"), piso = n.querySelector(":scope > .ca-piso");
     const limpiar = (x) => Object.assign(x.style, { backgroundImage: "", backgroundSize: "", backgroundRepeat: "" });
     if (!on) { limpiar(pared); limpiar(piso); return; }
-    try { Object.assign(pared.style, texPared(cfg.pared, cfg.patron)); Object.assign(piso.style, texPiso(cfg.piso)); }
+    try {
+      const tp = texPared(cfg.pared, cfg.patron);
+      Object.assign(pared.style, tp); Object.assign(piso.style, texPiso(cfg.piso));
+      // (Fase 73) La pared de enfrente (jugando) lleva el mismo tapiz que el cuarto.
+      n._muro?.style.setProperty("--tapiz", tp.backgroundImage); n._muro?.style.setProperty("--tapiz-tam", tp.backgroundSize);
+    }
     catch (e) { limpiar(pared); limpiar(piso); }
   }
 
@@ -612,10 +617,11 @@ export class Casita {
     if (!vh || !vw) return;
     // El alto manda, pero en un teléfono parado no se agranda tanto que no quepa casi nada de un cuarto.
     // (Abajo se deja lugar para los cuartitos (o, al acomodar, para el cajón): ahí se ve el piso, que sigue.)
-    const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 8;
+    const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 0;
     // (Fase 72) Arriba se deja libre lo que ocupa la barra (o la de Acomodar): el techo y los focos ya no quedan tapados.
     const arriba = this._arribaLibre();
-    this.k = lim(Math.min((vh - abajo - arriba) / H, vw / 400), 0.42, 1.45);
+    // (Fase 73) Jugando, el cuarto llena el alto (en un teléfono parado se deja ver un poquito menos de ancho).
+    this.k = lim(Math.min((vh - abajo - arriba) / H, vw / (this.editando ? 400 : 350)), 0.42, 1.45);
     // (Fase 70) Pixel parejo: que cada cuadrito (4 del mundo) mida un número ENTERO de pixeles de la pantalla. Si no,
     // unos cuadritos salen de 2 y otros de 3 pixeles y las cosas se ven chuecas. Se ajusta poquito (a lo más 12 %),
     // primero para abajo (para que quepa).
@@ -992,16 +998,24 @@ export class Casita {
     const arte = r.n.querySelector(":scope > .ca-obj-arte") || r.n.appendChild(el("div.ca-obj-arte"));
     // (Fase 64) Girado: se ve desde ese ángulo (se prepara un ratito; mientras, el dibujo de siempre).
     const g = this._giro(r.d, o), t = (r._tg = (r._tg || 0) + 1);
-    if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
     // (Fase 67) De frente también es pixel de verdad: la imagen en cuadritos abajo y el dibujo encima con lo quieto
     // transparente (así se sigue tocando donde tiene forma y lo que se mueve se sigue moviendo).
-    if (!g && !r.d.mascota) vistaPlana(r.d, o.e, C).then((v) => {
-      if (r._tg !== t || !r.n.isConnected || !v || r.n.classList.contains("plana")) return;
-      if (!arte.querySelector(":scope > svg")) return;
-      arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana" alt="" draggable="false" src="${v.url}" style="width:${v.w}px;height:${v.h}px">`);
-      marcarQuieto(arte.querySelector(":scope > svg"));
-      r.n.classList.add("plana");
-    });
+    // (Fase 73) Sin parpadeos: si su imagen pixel ya está hecha se pinta todo de una vez; si no, se queda lo que se veía
+    // hasta que esté lista (y si es nueva, no se asoma el dibujo liso mientras se prepara).
+    if (!g && !r.d.mascota) {
+      const frente = (v) => {
+        arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana", "preparando");
+        if (r.vg) { r.vg = null; this._colocar(r); }
+        if (v) { arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana" alt="" draggable="false" decoding="sync" src="${v.url}" style="width:${v.w}px;height:${v.h}px">`); marcarQuieto(arte.querySelector(":scope > svg")); r.n.classList.add("plana"); }
+        this._reponer3d(r);
+      };
+      const ya = vistaPlanaYa(r.d, o.e, C), vacio = !arte.firstChild;
+      if (ya) frente(ya);
+      else {
+        if (vacio) { frente(null); r.n.classList.add("preparando"); setTimeout(() => r.n.classList.remove("preparando"), 700); }
+        vistaPlana(r.d, o.e, C).then((v) => { if (r._tg === t && r.n.isConnected) frente(v); });
+      }
+    } else if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
     r.n.classList.toggle("girado", !!g);
     // (Fase 66) Su sombrita en pixel, del ancho de su base (girado, la sombra ya viene dibujada con su vista).
     if (r.d.capa === "piso") { try { const c = (r.d.w * 0.84) / 4; r.n.style.setProperty("--sombra", sombraPx(c).url); r.n.style.setProperty("--sombra-sol", sombraPx(c, true).url); } catch (e) { /* nada */ } }
@@ -1983,12 +1997,25 @@ export class Casita {
       // (Fase 64) Con el mouse, arrastrar el piso mueve la cámara (como deslizar con el dedo).
       if (e.pointerType === "mouse" && !this.editando && !g.mono && !g.obj) g.pan = { sl: this.vistaN.scrollLeft, st: this.vistaN.scrollTop };
       if (this.editando || g.jugando) {
-        if (g.obj) { g.off = { dx: (g.obj.v?.x ?? g.obj.gx) - p.X, dy: g.obj.o.y - p.y }; try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
+        if (g.obj) g.off = { dx: (g.obj.v?.x ?? g.obj.gx) - p.X, dy: g.obj.o.y - p.y };
+        // (Fase 73) Acomodando con el dedo, lo que NO está elegido no se mueve al deslizar (deslizar mueve la vista):
+        // para moverlo, tócalo primero, o déjalo presionado un ratito (se elige, vibra y ya lo llevas).
+        if (g.obj && this.editando && e.pointerType !== "mouse" && this.sel !== g.obj) {
+          g.espera = true;
+          const G0 = g;
+          g.tl = setTimeout(() => {
+            if (g !== G0 || G0.mov > 9) return;
+            G0.espera = false; this._levantando = true;
+            this._seleccionar(G0.obj); try { navigator.vibrate?.(12); } catch (er) { /* nada */ }
+            try { m.setPointerCapture(G0.id); } catch (er) { /* nada */ }
+          }, 330);
+        } else if (g.obj) { try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
       } else if (g.mono === this.yo) { try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
     });
     m.addEventListener("pointermove", (e) => {
       if (!g || e.pointerId !== g.id) return;
       g.mov = Math.max(g.mov, Math.hypot(e.clientX - g.x0, e.clientY - g.y0));
+      if (g.espera) { if (g.mov > 9) { clearTimeout(g.tl); g.espera = false; g.obj = null; g.deslizo = true; } return; }
       if (g.mov < 7) return;
       g.ultimo = e;
       if (g.pan) { this.vistaN.scrollLeft = g.pan.sl - (e.clientX - g.x0); this.vistaN.scrollTop = g.pan.st - (e.clientY - g.y0); this._libreCam?.(); return; }
@@ -1997,7 +2024,8 @@ export class Casita {
     });
     const fin = (e, cancelado = false) => {
       if (!g || e.pointerId !== g.id) return;
-      const G = g; g = null;
+      const G = g; g = null; clearTimeout(G.tl); this._levantando = false;
+      if (G.deslizo) return;
       cancelAnimationFrame(this._rqAuto);
       if (G.arrastra) { this._soltarObj(G, e); return; }
       if (G.cargando) { this._soltarMono(G, e); return; }
@@ -2067,7 +2095,7 @@ export class Casita {
     }, { passive: true });
     const movio = (x, y) => { if (tMira && Math.hypot(x - x0, y - y0) > 10) { clearTimeout(tMira); tMira = 0; } };
     v.addEventListener("pointermove", (e) => movio(e.clientX, e.clientY), { passive: true });
-    v.addEventListener("touchmove", (e) => { if (this._mirando && e.cancelable) e.preventDefault(); const t = e.touches[0]; if (t) movio(t.clientX, t.clientY); }, { passive: false });
+    v.addEventListener("touchmove", (e) => { if ((this._mirando || this._levantando || this.arrastrandoId) && e.cancelable) e.preventDefault(); const t = e.touches[0]; if (t) movio(t.clientX, t.clientY); }, { passive: false });
     for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) v.addEventListener(ev, (e) => { if (e.touches?.length) return; setTimeout(quitarMira, 0); }, { passive: true });
     // Con el teclado (Enter sobre una cosa), lo mismo que tocarla.
     m.addEventListener("keydown", (e) => { const pu = (e.key === "Enter" || e.key === " ") && e.target.closest?.(".ca-puerta"); if (pu) { e.preventDefault(); this.puertasN.tocar(pu.dataset.puerta); return; } if ((e.key === "Enter" || e.key === " ") && e.target.closest?.(".ca-obj")) { e.preventDefault(); const r = this.objs.get(e.target.closest(".ca-obj").dataset.id); if (r) this._tocarObj(r); } });

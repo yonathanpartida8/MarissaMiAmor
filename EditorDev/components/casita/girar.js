@@ -419,6 +419,10 @@ export function vistaGirada(d, e, C, g) {
  * Lo que se mueve sigue vivo encima (el mismo dibujo, con lo quieto transparente). Se hacen de una en una.
  */
 let COLA = Promise.resolve();
+/** (Fase 73) La vista plana si ya está hecha (para pintarla al instante, sin pasar por el dibujo liso). */
+export function vistaPlanaYa(d, e, C) {
+  try { const partes = separar(d.arte(e || {}, C)); return CACHE.get(`plana|${d.k}|${huella(partes.quieto)}`) || null; } catch (er) { return null; }
+}
 export function vistaPlana(d, e, C) {
   const arte = d.arte(e || {}, C), partes = separar(arte), clave = `plana|${d.k}|${huella(partes.quieto)}`;
   if (CACHE.has(clave)) return Promise.resolve(CACHE.get(clave));
@@ -433,7 +437,7 @@ export function vistaPlana(d, e, C) {
       cv.getContext("2d").putImageData(new ImageData(o2, OW2, OH2), 0, 0);
       const r = { url: cv.toDataURL(), w: OW2 * PX, h: OH2 * PX };
       CACHE.set(clave, r);
-      if (CACHE.size > 260) CACHE.delete(CACHE.keys().next().value);
+      if (CACHE.size > 700) CACHE.delete(CACHE.keys().next().value);
       return r;
     } catch (er) { return null; } finally { PEND.delete(clave); }
   }));

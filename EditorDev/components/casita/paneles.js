@@ -166,23 +166,45 @@ const sinAcentos = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u03
 const REPRESENTA = { sala: "sofa", cocina: "estufa", recamara: "cama", bano: "tina", estudio: "escritorio", cositas: "osito", adornos: "jarron_vidrio", plantas: "maceta", jardin: "arbolito", terraza: "hamaca", deco: "cuadro", techo: "foco_campana", limpieza: "escoba", mascotas: "gatito" };
 const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "#d3ebfb", estudio: "#ffe2c9", cositas: "#fff0b8", adornos: "#ffd9ec", plantas: "#d6f2c6", jardin: "#cfeec0", rio: "#cdeefc", terraza: "#ffe0cc", deco: "#eadcff", techo: "#fff1c8", limpieza: "#d6eefa", mascotas: "#fff1c4", recientes: "#ffe3ec" };
 /** La imagen pixel de una cosa, a escala entera (nítida), para la tarjeta o el chip. */
+/* (Fase 73) Sin parpadeos: cada miniatura se hace UNA vez (se guarda su imagen y su tamaño) y ya no pasa primero por
+   el dibujo liso: mientras se prepara queda su lugarcito vacío y luego aparece suavecito; la segunda vez sale al
+   instante. Al abrir el cajón se van preparando solas, de pocas en pocas, en los ratos libres. */
+const MINIS = new Map();
+const tamMini = (nw, nh, caja, max) => { const f = Math.min(caja[0] / nw, caja[1] / nh), k = f < 1 ? f : Math.min(max, Math.floor(f)); return [Math.round(nw * k), Math.round(nh * k)]; };
+const imgMini = (m) => { const im = new Image(); im.alt = ""; im.draggable = false; im.decoding = "sync"; im.width = m.w; im.height = m.h; im.src = m.url; return im; };
 function miniPixel(d, caja, max = 5) {
-  const i = el("i.ca-cat-mini", { html: d.arte({}, colorDe(d, {})) });
+  const clave = `${d.k}|${caja}|${max}`, ya = MINIS.get(clave);
+  const i = el("i.ca-cat-mini.px");
+  if (ya) { i.append(imgMini(ya)); return i; }
   i._cargar = () => {
     if (i._ya) return; i._ya = true;
     import("./girar.js").then((G) => G.vistaPlana(d, {}, colorDe(d, {}))).then((v) => {
-      if (!v) return;
-      const im = new Image();
-      im.onload = () => {
-        // A escala entera cuando cabe (cuadritos parejos); lo muy grande se achica para caber.
-        const nw = im.naturalWidth, nh = im.naturalHeight, f = Math.min(caja[0] / nw, caja[1] / nh), k = f < 1 ? f : Math.min(max, Math.floor(f));
-        im.width = Math.round(nw * k); im.height = Math.round(nh * k);
-        i.replaceChildren(im); i.classList.add("px");
+      if (!v) { i.classList.remove("px"); i.innerHTML = d.arte({}, colorDe(d, {})); return; }
+      const pre = new Image();
+      pre.onload = () => {
+        const [w, h] = tamMini(pre.naturalWidth, pre.naturalHeight, caja, max), m = { url: v.url, w, h };
+        MINIS.set(clave, m);
+        const im = imgMini(m); im.classList.add("llega");
+        i.replaceChildren(im);
       };
-      im.alt = ""; im.draggable = false; im.src = v.url;
+      pre.src = v.url;
     }).catch(() => {});
   };
   return i;
+}
+/** (Fase 73) Prepara en los ratos libres las miniaturas que faltan (para que al deslizar ya estén listas). */
+function prepararMinis(ds, caja, max = 5) {
+  const faltan = ds.filter((d) => !MINIS.has(`${d.k}|${caja}|${max}`));
+  const uno = () => {
+    const d = faltan.shift(); if (!d) return;
+    import("./girar.js").then((G) => G.vistaPlana(d, {}, colorDe(d, {}))).then((v) => {
+      if (!v) return;
+      const pre = new Image();
+      pre.onload = () => { const [w, h] = tamMini(pre.naturalWidth, pre.naturalHeight, caja, max); MINIS.set(`${d.k}|${caja}|${max}`, { url: v.url, w, h }); };
+      pre.src = v.url;
+    }).catch(() => {}).finally(() => (window.requestIdleCallback ? requestIdleCallback(uno, { timeout: 400 }) : setTimeout(uno, 40)));
+  };
+  uno();
 }
 export function cajonCatalogo(j) {
   const recientes = () => j.recientes().map((k) => CATALOGO[k]).filter(Boolean);
@@ -211,18 +233,33 @@ export function cajonCatalogo(j) {
       d.nuevo ? el("b.ca-cat-nuevo", { text: "Nuevo" }) : null,
     ].filter(Boolean));
     mini._cargar && (b._cargar = mini._cargar);
-    // Chiquito: arrastrar hacia arriba la saca del cajón y se pone donde la sueltes.
+    // (Fase 73) Deslizar SIEMPRE desliza (de lado o hacia arriba y abajo): nunca saca nada sin querer. Para llevarla al
+    // cuarto: déjala presionada un ratito (se levanta y vibra) y llévala a donde quieras; con el mouse, arrástrala.
     b.addEventListener("pointerdown", (e) => {
-      if (e.button > 0 || n.classList.contains("grande")) return;
-      const x0 = e.clientX, y0 = e.clientY, id = e.pointerId;
+      if (e.button > 0) return;
+      const x0 = e.clientX, y0 = e.clientY, id = e.pointerId, dedo = e.pointerType !== "mouse";
+      let ult = e, tPre = 0, tLev = 0;
+      const levantar = () => {
+        quitar(); b._arrastro = true; b.classList.remove("presionada");
+        const grande = n.classList.contains("grande");
+        try { navigator.vibrate?.(14); } catch (er) { /* nada */ }
+        j.arrastrarNuevo(d.k, ult);
+        // (Grande, al soltarla se hace chiquito para que veas dónde quedó.)
+        if (grande) addEventListener("pointerup", function f(ev) { if (ev.pointerId !== id) return; removeEventListener("pointerup", f); agrandar(false); });
+      };
       const mover = (ev) => {
         if (ev.pointerId !== id) return;
-        if (y0 - ev.clientY > 22 && Math.abs(ev.clientX - x0) < (y0 - ev.clientY) * 1.4) { quitar(); b._arrastro = true; j.arrastrarNuevo(d.k, ev); }
-        else if (Math.abs(ev.clientX - x0) > 14) quitar();
+        ult = ev;
+        const dx = ev.clientX - x0, dy = ev.clientY - y0;
+        if (dedo) { if (Math.hypot(dx, dy) > 9) quitar(); return; }    // (se movió antes de tiempo: es deslizar)
+        if (Math.hypot(dx, dy) > 8) levantar();                         // (con el mouse, arrastrar la saca)
       };
-      const quitar = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", quitar); removeEventListener("pointercancel", quitar); };
+      const quitar = () => { clearTimeout(tPre); clearTimeout(tLev); b.classList.remove("presionada"); removeEventListener("pointermove", mover); removeEventListener("pointerup", quitar); removeEventListener("pointercancel", quitar); };
+      if (dedo) { tPre = setTimeout(() => b.classList.add("presionada"), 110); tLev = setTimeout(levantar, 340); }
       addEventListener("pointermove", mover); addEventListener("pointerup", quitar); addEventListener("pointercancel", quitar);
     });
+    // (Al dejarla presionada, el teléfono no abre su menú de copiar o guardar imagen.)
+    b.addEventListener("contextmenu", (e) => e.preventDefault());
     return b;
   };
   const lista = () => {
@@ -232,6 +269,7 @@ export function cajonCatalogo(j) {
   const pintar = () => {
     const l = lista();
     rejilla.replaceChildren(...l.map(tarjeta));
+    if (abierto) prepararMinis(l, [60, 50]);
     for (const b of rejilla.children) ver(b);
     rejilla.scrollLeft = 0; rejilla.scrollTop = 0;
     cuenta.textContent = l.length === 1 ? "1 cosita" : `${l.length} cositas`;
@@ -266,7 +304,7 @@ export function cajonCatalogo(j) {
     if (!si) n._altoChico = 0;
     n.classList.toggle("grande", si);
     asa.setAttribute("aria-label", si ? "Hacer chiquito el cajón" : "Agrandar el cajón");
-    pista.textContent = si ? "Toca una cosa para ponerla en el cuarto" : "Toca una cosa para ponerla, o arrástrala hacia arriba y suéltala donde quieras";
+    pista.textContent = PISTA;
     j.sonar(si ? "abrir" : "cerrar", { volumen: 0.4 });
     rejilla.scrollLeft = 0; rejilla.scrollTop = 0;
   };
@@ -278,7 +316,8 @@ export function cajonCatalogo(j) {
     const fin = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", fin); removeEventListener("pointercancel", fin); };
     addEventListener("pointermove", mover); addEventListener("pointerup", fin); addEventListener("pointercancel", fin);
   });
-  const pista = el("small.ca-cajon-pista", { text: "Toca una cosa para ponerla, o arrástrala hacia arriba y suéltala donde quieras" });
+  const PISTA = matchMedia("(pointer: coarse)").matches ? "Toca una cosa para ponerla, o déjala presionada y llévala a donde quieras" : "Haz clic en una cosa para ponerla, o arrástrala a donde quieras";
+  const pista = el("small.ca-cajon-pista", { text: PISTA });
   const n = el("div.ca-cajon.v69", {}, [
     asa,
     el("div.ca-cajon-cab", {}, [
@@ -290,6 +329,7 @@ export function cajonCatalogo(j) {
     rejilla, vacio,
     pista,
   ]);
+  n.addEventListener("touchmove", (e) => { if (j.arrastrandoId && e.cancelable) e.preventDefault(); }, { passive: false });
   pintarTabs(); pintar();
   // En la compu, la ruedita del mouse desliza de lado las tiras (las categorías y, en chiquito, las cosas).
   for (const t of [tabs, rejilla]) t.addEventListener("wheel", (e) => {

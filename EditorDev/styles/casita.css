@@ -1211,6 +1211,11 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-ambiente.recamara { background-color: rgba(200, 140, 255, .3); }
 .ca-ambiente.bano { background-color: rgba(110, 210, 255, .3); }
 .ca-ambiente.estudio { background-color: rgba(255, 200, 150, .26); }
+/* (Fase 72) Los cuartos que se obtienen también tienen su luz (cálida, menta, rosita y cielo). */
+.ca-ambiente.extra1 { background-color: rgba(255, 214, 140, .28); }
+.ca-ambiente.extra2 { background-color: rgba(150, 230, 190, .26); }
+.ca-ambiente.extra3 { background-color: rgba(255, 160, 200, .28); }
+.ca-ambiente.extra4 { background-color: rgba(150, 200, 255, .28); }
 .ca-ambiente:is(.jardin, .terraza) { background-color: rgba(255, 240, 200, .12); }
 .ca-mundo.tarde .ca-ambiente:is(.jardin, .terraza) { background-color: rgba(255, 140, 110, .3); }
 .ca-mundo.noche .ca-ambiente { background-color: rgba(255, 190, 110, .34); }
@@ -1886,7 +1891,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-obj.ventana.e-cerrada .cortina-ce { display: inline; }
 .ca-obj.ventana.e-cerrada .cortina-ab { display: none; }
 /* (Fase 71) Abajo del piso (enfrente, donde ya no se acomoda): la tierra, como un subterráneo, en pixel. */
-.ca-frente-muro { background: var(--subsuelo, none) 0 0 / var(--sub-w, 100%) 440px no-repeat, #4f3d39; image-rendering: pixelated; box-shadow: 0 -2px 0 rgba(60, 30, 24, .3); }
+.ca.editando .ca-frente-muro { background: var(--subsuelo, none) 0 0 / var(--sub-w, 100%) 440px no-repeat, #4f3d39; image-rendering: pixelated; box-shadow: 0 -2px 0 rgba(60, 30, 24, .3); }
 /* (Fase 71) Si la barrita de lo elegido no cabe sin taparlo (algo enorme), se hace transparentita. */
 .ca-sel.encima { opacity: .78; }
 .ca-sel.encima:active, .ca-sel.encima:focus-within { opacity: 1; }
@@ -1985,3 +1990,38 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-hud.v72 .ca-hud-linea:has(.ca-hud-guardado:not([data-k="listo"])) .ca-hud-estado { display: none; }
 .ca-hud.v72 .ca-hud-izq { flex: 0 1 auto; margin-right: auto; }
 @media (min-width: 900px) { .ca-nec { right: auto; width: min(620px, calc(100% - 16px)); } }
+
+/* ═══════════ FASE 73: jugando, la pared de enfrente; acomodando, el subterráneo ═══════════ */
+/* Jugando ya no se ve tierra abajo del cuarto: se ve la pared de enfrente cortada bajito (casita de muñecas), en
+   pixel: arriba la tapa del corte (lo grueso de la pared visto desde arriba, con su orilla y su filito de sombra) y
+   abajo la cara de la pared con EL MISMO TAPIZ del cuarto, un poquito en sombra, con su moldura. Al acomodar se
+   vuelve tierra (el subterráneo): así se nota dónde termina lo que se puede acomodar. */
+.ca:not(.editando) .ca-frente-muro {
+  background-color: var(--pared, #ffe1ec);
+  background-image:
+    linear-gradient(#6f4f63 0 4px, #fffaf6 4px 16px, #f1e3e8 16px 20px, #9b7488 20px 24px, rgba(60, 30, 50, .34) 24px 28px, rgba(60, 30, 50, .14) 28px 36px, transparent 36px),
+    linear-gradient(transparent 0 104px, rgba(255, 255, 255, .55) 104px 108px, rgba(80, 40, 64, .3) 108px 112px, rgba(80, 40, 64, .1) 112px 116px, transparent 116px),
+    linear-gradient(rgba(70, 36, 58, .1), rgba(70, 36, 58, .26)),
+    var(--tapiz, none);
+  background-size: auto, auto, auto, var(--tapiz-tam, auto);
+  background-position: 0 0, 0 0, 0 0, 0 28px;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+  image-rendering: pixelated;
+  box-shadow: 0 -2px 0 rgba(80, 40, 64, .2);
+}
+/* (Fase 73) El cajón: las tarjetas dejan deslizar en las dos direcciones (chiquito, de lado; grande, hacia arriba y
+   abajo), con inercia y sin rebotar la página. Presionada un ratito, la tarjeta se «carga» (se hunde y se pinta su
+   orilla) y al levantarse vibra. Las tarjetas entran sin desaparecer (nada parpadea al cambiar de sección). */
+.ca-cat-b { touch-action: pan-x pan-y; }
+.ca-cajon.v69 .ca-cat-tira, .ca-cajon.v69 .ca-cat-tabs { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.ca-cajon.v69 .ca-cat-b { animation-name: caCartaEntra73; }
+@keyframes caCartaEntra73 { from { transform: translateY(6px) scale(.97); } }
+.ca-cajon.v69 .ca-cat-b.presionada { transform: scale(.94); box-shadow: inset 0 0 0 2.5px var(--ca-acento), 0 0 0 4px rgba(229, 103, 154, .16); transition: transform .22s cubic-bezier(.3, .9, .4, 1), box-shadow .22s; }
+.ca-cat-mini.px img.llega { animation: caMiniLlega .16s ease-out both; }
+@keyframes caMiniLlega { from { opacity: 0; } }
+.ca-cajon.v69 .ca-cat-b .ca-cat-mini.px { place-items: end center; }
+/* (Fase 73) Acomodando: deslizar encima de una cosa que no está elegida mueve la vista (no la cosa). */
+.ca.editando .ca-obj:not(.sel) { touch-action: pan-x pan-y; }
+.ca.editando .ca-obj.sel { touch-action: none; }
+/* (Fase 73) Mientras se prepara la imagen pixel de algo nuevo, no se asoma su dibujo liso (era el «parpadeo»). */
+.ca-obj.preparando > .ca-obj-arte { visibility: hidden; }
