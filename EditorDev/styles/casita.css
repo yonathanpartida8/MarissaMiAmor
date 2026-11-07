@@ -846,7 +846,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca.escribiendo :is(.ca-hud-cuartos, .ca-barra, .ca-hud) { visibility: hidden; }
 .ca.escribiendo .ca-monito.yo .ca-globos { display: none; }
 body.ca-escribiendo .jt-nav { display: none; }
-.ca-mundo.subiendo { transition: transform .22s ease-out; }
+.ca-mundo.subiendo { transition: transform .38s cubic-bezier(.25, .8, .3, 1); }
 
 /* La tablita de gestos: con título y en cuadritos. */
 .ca-menu { grid-template-columns: none; display: grid; gap: 6px; max-width: min(92vw, 360px); max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; padding: 10px; border-radius: 22px; }
@@ -1890,3 +1890,98 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* (Fase 71) Si la barrita de lo elegido no cabe sin taparlo (algo enorme), se hace transparentita. */
 .ca-sel.encima { opacity: .78; }
 .ca-sel.encima:active, .ca-sel.encima:focus-within { opacity: 1; }
+
+/* ═══════════ FASE 72: HUD que no tapa, necesidades lindas, «Más», salir con atrás ═══════════ */
+.ca-barra { display: none !important; }
+.ca-hud.v72 { align-items: center; gap: 6px; padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 0; }
+.ca-hud.v72 .ca-hud-izq { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; max-width: none; padding: 5px 12px 5px 6px; border: 0; border-radius: 18px; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.ca-hud.v72 .ca-hud-izq:active { transform: scale(.97); }
+.ca-hud-mapa { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: var(--ca-rosa); color: var(--ca-acento); }
+.ca-hud-mapa svg { width: 21px; height: 21px; }
+.ca-hud-txt { display: grid; gap: 1px; min-width: 0; }
+.ca-hud.v72 .ca-hud-cuarto { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ca-hud.v72 .ca-hud-linea { display: flex; gap: 6px; min-width: 0; overflow: hidden; }
+.ca-hud.v72 .ca-hud-estado, .ca-hud.v72 .ca-hud-guardado { font-size: 10px; }
+.ca-hud.v72 .ca-hud-der { gap: 4px; }
+.ca-hud.v72 .ca-r { width: 48px; height: 46px; border-radius: 15px; }
+.ca-hud.v72 .ca-r i svg { width: 20px; height: 20px; }
+.ca-hud.v72 .ca-r span { font-size: 9.5px; max-width: 48px; }
+.ca-hud.v72 .ca-r.mudo { color: #d0485f; }
+@media (max-width: 370px) { .ca-hud.v72 .ca-r { width: 42px; } .ca-hud.v72 .ca-r span { display: none; } .ca-hud.v72 .ca-r i svg { width: 22px; height: 22px; } }
+/* Las necesidades: una tira delgadita debajo de la barra (fuera del cuarto), con píldoras de color. */
+.ca-nec { left: 8px; right: 8px; top: calc(60px + env(safe-area-inset-top, 0px)); display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: rgba(255, 255, 255, .9); box-shadow: 0 4px 14px rgba(110, 50, 90, .12); grid-template-columns: none; }
+.ca-nec.abierta { grid-template-columns: none; }
+.ca-nec-f { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px 0 4px; border-radius: 11px; background: #fdf3f7; color: #a2899c; }
+.ca-nec-ico { flex: none; width: 15px; height: 15px; }
+.ca-nec-barra, .ca-nec.abierta .ca-nec-barra { flex: 1 1 auto; width: auto; min-width: 12px; height: 8px; border-radius: 6px; background: #efe2ea; box-shadow: inset 0 0 0 1px rgba(74, 51, 70, .12); }
+.ca-nec-barra b { border-radius: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 82%, #000), var(--c) 55%, color-mix(in srgb, var(--c) 60%, #fff)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+.ca-nec-f small, .ca-nec.abierta small { display: none; }
+.ca-nec-f.baja { background: #ffe7ea; color: #e5484d; }
+.ca-nec-f.llena { background: #eaf8ef; }
+:root[data-tema="oscuro"] .ca :is(.ca-nec, .ca-nec-f) { background-color: #2a2130; }
+/* «Más»: una lista bonita debajo de su botón. */
+.ca-menu.ca-menu-mas { left: auto; min-width: 230px; padding: 8px; grid-template-columns: none; transform-origin: 100% 0; }
+.ca-menu-lista { display: grid; gap: 2px; }
+.ca-menu-mas .ca-menu-b { flex-direction: row; justify-content: flex-start; gap: 10px; min-width: 0; width: 100%; padding: 6px 8px; border-radius: 14px; }
+.ca-menu-mas .ca-menu-b i { width: 34px; height: 34px; border-radius: 12px; }
+.ca-menu-mas .ca-menu-b span { text-align: left; max-width: none; font-size: 13px; }
+.ca-menu-mas .ca-menu-b[data-k="salir"] i { background: #ffe1e6; color: #d0485f; }
+/* El avisito para salir (atrás dos veces). */
+.ca-salir-aviso { position: absolute; z-index: 70; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 999px; background: #4a3346; color: #fff; font: 800 13px/1.2 "Nunito", sans-serif; box-shadow: 0 10px 26px rgba(60, 20, 50, .3); transform: translate(-50%, 24px); opacity: 0; pointer-events: none; transition: transform .28s cubic-bezier(.3, 1.4, .5, 1), opacity .2s; }
+.ca-salir-aviso.ver { transform: translate(-50%, 0); opacity: 1; }
+.ca-salir-aviso i { display: grid; color: #ff9cbf; } .ca-salir-aviso i svg { width: 18px; height: 18px; }
+.ca-salir-aviso i .ico-fondo { display: none; }
+/* (Fase 72) La puerta de atrás en pixel (marco y hoja dibujados cuadrito por cuadrito). */
+.ca-puerta.atras { width: 84px; height: 168px; }
+.ca-puerta.atras.px .pu-marco { border-radius: 0; background: var(--marco-px) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; box-shadow: 0 4px 0 -1px rgba(90, 40, 70, .14); }
+.ca-puerta.atras.px .pu-marco::before { display: none; }
+.ca-puerta.atras.px :is(.pu-hueco, .pu-hoja) { left: 8px; right: 8px; top: 12px; }
+.ca-puerta.atras.px .pu-hueco { background: linear-gradient(90deg, #1e1427 0 12%, #34253d 12% 88%, #2a1d33 88%); box-shadow: none; }
+.ca-puerta.atras.px .pu-hoja { background: var(--hoja-px) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; box-shadow: none; }
+.ca-puerta.atras.px :is(.pu-tablero, .pu-perilla) { display: none; }
+.ca-puerta.atras.px .pu-umbral { border-radius: 0; background: #e3cfd7; box-shadow: 0 2px 0 rgba(90, 40, 70, .12); }
+.ca-obj .puerta-b { transform-box: fill-box; }
+/* (Fase 72) El mapita de la casa: la casa en fila (como casita de muñecas), cuartos que se arrastran y sus puertitas. */
+.ca-mapa { display: grid; gap: 10px; padding: 0 14px 16px; }
+.ca-mapa-ayuda, .ca-mapa-tip { margin: 0; font: 700 12.5px/1.35 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-mapa-fila { position: relative; display: flex; align-items: stretch; gap: 14px; overflow-x: auto; padding: 10px 6px 14px; scroll-snap-type: x proximity; scrollbar-width: thin; touch-action: pan-x; }
+.ca-mapa-c { position: relative; flex: none; width: 104px; display: grid; justify-items: center; gap: 4px; padding: 7px 7px 8px; border: 0; border-radius: 16px; background: #fff; box-shadow: 0 0 0 2px #f1dfe7, 0 6px 14px rgba(110, 50, 90, .12); color: var(--ca-tinta); font: inherit; cursor: grab; scroll-snap-align: center; touch-action: pan-x; user-select: none; -webkit-user-select: none; transition: box-shadow .2s, transform .2s; }
+.ca-mapa-c.sel { box-shadow: 0 0 0 3px var(--ca-acento), 0 8px 18px rgba(229, 103, 154, .3); }
+.ca-mapa-c.fija { cursor: pointer; }
+.ca-mapa-c.arrastra { z-index: 3; cursor: grabbing; transition: none; box-shadow: 0 0 0 3px var(--ca-acento), 0 16px 30px rgba(110, 50, 90, .3); }
+/* Su cuartito: pared arriba, piso abajo (los colores de verdad de ese cuarto) y su iconito. */
+.ca-mapa-mini { position: relative; display: grid; place-items: center; width: 90px; height: 62px; border-radius: 10px; overflow: hidden; background: linear-gradient(var(--pared, #ffe1ec) 0 62%, #fffaf6 62% 66%, var(--piso, #c9935e) 66%); box-shadow: inset 0 0 0 2px rgba(74, 51, 70, .18); image-rendering: pixelated; }
+.ca-mapa-c.afuera .ca-mapa-mini { background: linear-gradient(#bfe6ff 0 58%, var(--piso, #86c873) 58%); }
+.ca-mapa-ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: rgba(255, 255, 255, .78); color: var(--ca-acento); }
+.ca-mapa-ico svg { width: 22px; height: 22px; }
+.ca-mapa-c b { max-width: 96px; font: 900 12px/1.15 "Nunito", sans-serif; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-mapa-quien { display: flex; gap: 3px; min-height: 16px; font: 700 10px/1 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-mapa-quien em { padding: 2px 6px; border-radius: 99px; font-style: normal; font-weight: 900; color: #fff; background: #ff86b0; }
+.ca-mapa-quien em.suyo { background: #8f7ad8; }
+/* Entre cuarto y cuarto, su puertita (cada puerta lleva al de junto). */
+.ca-mapa-c + .ca-mapa-c:not(.nuevo)::before { content: ""; position: absolute; left: -15px; top: 30px; width: 16px; height: 22px; border-radius: 6px 6px 1px 1px; background: #f2b1c6; box-shadow: inset 0 0 0 2px #b9839d, inset -4px 0 0 rgba(255, 255, 255, .3); }
+.ca-mapa-c + .ca-mapa-c:not(.nuevo)::after { content: ""; position: absolute; left: -6px; top: 42px; width: 3px; height: 3px; border-radius: 50%; background: #ffd889; }
+.ca-mapa-c.nuevo { cursor: pointer; background: #fff7fa; box-shadow: 0 0 0 2px dashed #f1c5d6; outline: 2px dashed #f1b8cd; outline-offset: -2px; }
+.ca-mapa-c.nuevo .ca-mapa-mini { background: repeating-linear-gradient(45deg, #fff1f6 0 8px, #ffe6ef 8px 16px); }
+.ca-mapa-det { display: grid; gap: 8px; }
+.ca-mapa-t { font: 900 15px/1.2 "Nunito", sans-serif; color: var(--ca-tinta); }
+.ca-mapa-acc { display: flex; flex-wrap: wrap; gap: 6px; }
+.ca-mapa-acc .ca-boton { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; }
+.ca-mapa-acc .ca-boton:not(.primario) { background: var(--ca-rosa); color: var(--ca-acento); }
+.ca-mapa-acc .ca-boton.peligro { background: #ffe1e6; color: #d0485f; }
+.ca-mapa-acc .ca-boton i { display: grid; } .ca-mapa-acc .ca-boton i svg { width: 18px; height: 18px; } .ca-mapa-acc .ca-boton i .ico-fondo { display: none; }
+.ca-mapa-nombre { display: flex; gap: 6px; }
+.ca-mapa-nombre .ca-boton:not(.primario) { background: var(--ca-rosa); color: var(--ca-acento); }
+.ca-mapa-ideas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ca-mapa-ideas .ca-chip { height: 30px; font-size: 12px; }
+.ca-mapa-c { -webkit-touch-callout: none; }
+/* (Fase 72) El letrero del cuarto en dos renglones (nombre y quién está): «Todo guardado» sólo se asoma mientras guarda
+   o si algo falló, para que el letrero quede chiquito y nada se encime con las necesidades. */
+.ca-hud.v72 .ca-hud-izq { height: 46px; }
+.ca-hud.v72 .ca-hud-linea { flex-wrap: nowrap; }
+.ca-hud.v72 .ca-hud-estado { flex: 1 1 auto; min-width: 0; }
+.ca-hud.v72 .ca-hud-guardado { flex: none; }
+.ca-hud.v72 .ca-hud-guardado[data-k="listo"] { display: none; }
+.ca-hud.v72 .ca-hud-linea:has(.ca-hud-guardado:not([data-k="listo"])) .ca-hud-estado { display: none; }
+.ca-hud.v72 .ca-hud-izq { flex: 0 1 auto; margin-right: auto; }
+@media (min-width: 900px) { .ca-nec { right: auto; width: min(620px, calc(100% - 16px)); } }

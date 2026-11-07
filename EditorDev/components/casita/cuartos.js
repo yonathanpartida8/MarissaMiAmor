@@ -25,7 +25,15 @@ export const CUARTOS = [
   { k: "bano", n: "Baño", w: 720, foco: 210, pared: "#dff3fb", patron: "azulejo", piso: "mosaico" },
   { k: "estudio", n: "Estudio", w: 800, foco: 330, pared: "#e3ecff", patron: "estrellas", piso: "clara" },
   { k: "terraza", n: "Terraza", w: 880, afuera: true, terraza: true, pared: "#bfe6ff", patron: "liso", piso: "duela" },
+  // (Fase 72) Cuartos que se pueden OBTENER desde el mapita de la casa (para agrandarla): ya existen en el mundo, pero
+  // ninguna puerta llega a ellos hasta que los obtienes; entonces les pones nombre y los decoras como quieras.
+  { k: "extra1", n: "Cuarto nuevo", w: 800, extra: true, foco: 400, pared: "#fff4c8", patron: "puntos", piso: "clara" },
+  { k: "extra2", n: "Cuarto nuevo", w: 800, extra: true, foco: 400, pared: "#d8f0e6", patron: "rayas", piso: "madera" },
+  { k: "extra3", n: "Cuarto nuevo", w: 800, extra: true, foco: 400, pared: "#ffd6e0", patron: "corazones", piso: "alfombra" },
+  { k: "extra4", n: "Cuarto nuevo", w: 800, extra: true, foco: 400, pared: "#e3ecff", patron: "cuadros", piso: "mosaico" },
 ];
+/** (Fase 72) Los cuartos que sí son parte de la casa ahorita (los que se pueden obtener, sólo si ya los obtuviste). */
+export const enLaCasa = (cfgDe) => CUARTOS.filter((c) => !c.extra || cfgDe(c.k)?.tiene);
 /** Los cuartos que llegaron después: a una casita que ya existía se le agregan con su acomodo de entrada. */
 export const CUARTOS_NUEVOS = ["estudio", "terraza"];
 export const ANCHO = CUARTOS.reduce((a, c) => a + c.w, 0);
@@ -60,12 +68,17 @@ const INICIAL = {
   bano: [["espejo", 420, 330], ["toallero", 275, 350], ["tapete", 140, 557], ["tina", 138, 512], ["inodoro", 295, 508], ["lavabo", 420, 506], ["patito", 60, 552], ["maceta", 515, 548], ["plafon", 210, "techo"]],
   estudio: [["ventana", 455, 320], ["neon", 250, 200], ["corcho", 110, 250], ["poster", 592, 250], ["tapete_redondo", 300, 557], ["librero_alto", 64, 505], ["piano", 210, 506], ["guitarra", 312, 540], ["sillon_lectura", 395, 512], ["lampara_arco", 486, 505], ["consola", 562, 506], ["puff", 214, 550], ["globo_mundo", 600, 552], ["farol_papel", 330, "techo"]],
   terraza: [["luces", 330, 466], ["hamaca", 128, 476], ["sombrilla", 640, 490], ["mesa_picnic", 560, 512], ["alberca", 300, 545], ["camastro", 112, 552], ["flamenco", 214, 554], ["cactus", 462, 552], ["maceta_grande", 672, 552]],
+  // (Fase 72) Los cuartos por obtener nacen con su ventana y su foco (lo demás lo decoras tú).
+  extra1: [["ventana", 300, 330], ["foco_campana", 400, "techo"]],
+  extra2: [["ventana", 520, 330], ["foco_pelon", 400, "techo"]],
+  extra3: [["ventana", 300, 330], ["candil", 420, "techo"]],
+  extra4: [["ventana", 500, 330], ["farol_papel", 400, "techo"]],
 };
 
 /** La casa de entrada (v2). Si había una casita de antes (v1), se respetan sus colores y sus cositas. */
 export function casaInicial(antes) {
   const objetos = [];
-  for (const [c, lista] of Object.entries(INICIAL)) lista.forEach(([t, x, y, f], i) => objetos.push({ id: `${c.slice(0, 2)}${i}`, t, c, x, y: yDe(t, y), f: !!f, e: {} }));
+  for (const [c, lista] of Object.entries(INICIAL)) if (!cuarto(c).extra) lista.forEach(([t, x, y, f], i) => objetos.push({ id: `${c.slice(0, 2)}${i}`, t, c, x, y: yDe(t, y), f: !!f, e: {} }));
   const cuartos = {};
   for (const c of CUARTOS) cuartos[c.k] = { pared: c.pared, patron: c.patron, piso: c.piso, ...(c.afuera ? {} : { t71: 1 }), ...(antes?.cuartos?.[c.k] || {}) };
   cuartos.jardin.mapa = 1;   // (Fase 64: ya nace con el patio grande)
@@ -155,9 +168,31 @@ export const PUERTAS = {
   bano: [{ id: "ba-i", pared: "izq", va: "recamara" }, { id: "ba-d", pared: "der", va: "estudio" }],
   estudio: [{ id: "es-i", pared: "izq", va: "bano" }, { id: "es-d", pared: "der", va: "terraza" }],
   terraza: [{ id: "te-a", pared: "atras", x: 76, va: "estudio" }],
+  extra1: [{ id: "x1-i", pared: "izq", va: "" }, { id: "x1-d", pared: "der", va: "" }],
+  extra2: [{ id: "x2-i", pared: "izq", va: "" }, { id: "x2-d", pared: "der", va: "" }],
+  extra3: [{ id: "x3-i", pared: "izq", va: "" }, { id: "x3-d", pared: "der", va: "" }],
+  extra4: [{ id: "x4-i", pared: "izq", va: "" }, { id: "x4-d", pared: "der", va: "" }],
 };
 /** El color de las puertas de cada cuarto (su identidad): rosita en la sala, madera en la cocina, lila en la recámara… */
-export const COLOR_PUERTA = { jardin: "#e8b48a", sala: "#f2b1c6", cocina: "#e6bd92", recamara: "#c8b5f0", bano: "#a6d9ec", estudio: "#a9c3ea", terraza: "#e0ae84" };
+export const COLOR_PUERTA = { jardin: "#e8b48a", sala: "#f2b1c6", cocina: "#e6bd92", recamara: "#c8b5f0", bano: "#a6d9ec", estudio: "#a9c3ea", terraza: "#e0ae84", extra1: "#ffd27a", extra2: "#94dfbd", extra3: "#ff9cbf", extra4: "#8fd0ff" };
+/** (Fase 72) Cómo quedan las puertas con la casa en fila (como en el mapita): cada cuarto con sus vecinos de los lados
+ *  (el primero, con el jardín: por ahí se entra), sin atajos por atrás; lo de afuera que sólo tiene puerta atrás (la
+ *  terraza) va al final. `fila`: los cuartos de la casa, en orden, sin el jardín. */
+export function opsFila(fila) {
+  const sinLados = (k) => !(PUERTAS[k] || []).some((s) => s.pared === "izq" || s.pared === "der");
+  const orden = [...fila.filter((k) => !sinLados(k)), ...fila.filter((k) => sinLados(k))], todos = ["jardin", ...orden], ops = [];
+  todos.forEach((k, i) => {
+    if (!i) return;
+    const izq = todos[i - 1], der = todos[i + 1] || "", v = { orden: i };
+    for (const s of PUERTAS[k] || []) v["p:" + s.id] = s.pared === "izq" ? izq : s.pared === "der" ? der : sinLados(k) ? izq : "";
+    ops.push({ o: "cuarto", k, v });
+  });
+  // Del jardín, la puerta de la fachada lleva al primer cuarto.
+  ops.push({ o: "cuarto", k: "jardin", v: { "p:ja-a": orden[0] || "sala" } });
+  return { ops, orden };
+}
+/** (Fase 72) Los objetos de entrada de un cuarto que se acaba de obtener. */
+export const opsObtener = (k) => (INICIAL[k] || []).map(([t, x, y, f], i) => ({ o: "pon", obj: { id: `${k.slice(0, 2)}${k.slice(-1)}${i}`, t, c: k, x, y: yDe(t, y), f: !!f, e: {} } }));
 
 /** (Fase 64) Una casita de antes con el jardín chiquito: sus cositas de entrada (si no se movieron) van a su lugar en el
  *  patio grande, la «Puerta de la casa» de entrada se quita (ya está la de la fachada) y lo que quedó sobre las espinas,

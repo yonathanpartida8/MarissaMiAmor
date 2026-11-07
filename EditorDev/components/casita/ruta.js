@@ -47,7 +47,7 @@ export class Navegacion {
     const b = d.pie == null ? medirBase(d, () => this.invalidar(r.o.c)) : null;
     if (b?.nada) return null;
     const sx = r.o.f ? -1 : 1, ca = b ? (b.a + b.b) / 2 - 0.5 : 0, cx = r.gx + ca * d.w * sx;
-    const medio = b ? Math.max(8, ((b.b - b.a) * d.w) / 2) : d.w * (d.pie ?? 0.42), fondo = Math.max(10, Math.min(56, d.fondo ?? hondura(d) * 0.42)), g = j._girable?.(d) ? giroDe(r.o) : 0;
+    const medio = b ? Math.max(8, ((b.b - b.a) * d.w) / 2) : d.w * (d.pie ?? 0.42), fondo = Math.max(10, Math.min(56, d.fondo ?? hondura(d) * 0.42)), g = j._giro ? j._giro(d, r.o) : j._girable?.(d) ? giroDe(r.o) : 0;
     if (g) { const G = huellaGirada(d, g, medio, fondo), cy = r.o.y - fondo / 2; return { x0: r.gx - G.medio, x1: r.gx + G.medio, y0: cy - G.fondo / 2, y1: cy + G.fondo / 2 + 3 }; }   // (Fase 64: girado)
     return { x0: cx - medio, x1: cx + medio, y0: r.o.y - fondo, y1: r.o.y + 3 };
   }

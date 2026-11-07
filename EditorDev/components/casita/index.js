@@ -38,7 +38,7 @@ import { Vida } from "./vida.js";
 import { Fisica } from "./fisica.js";
 /** (Fase 68) El paso de los monitos (del mundo por segundo): caminando, trotando (viajes de más de TROTE_DESDE). */
 const VEL_PASO = 168, VEL_TROTE = 246, TROTE_DESDE = 640;
-import { giroDe, vistaGirada, vistaPlana, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA } from "./girar.js";
+import { giroDe, vistaGirada, vistaPlana, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
 import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -125,6 +125,7 @@ export class Casita {
     this.mundo = el("div.ca-mundo");
     this.lienzo = el("div.ca-lienzo", {}, [this.mundo]);
     this.vistaN = el("div.ca-vista", {}, [this.lienzo]);
+    this._pellizco();   // (Fase 72) acercar y alejar con dos dedos (regresa sola)
     this._armarCuartos();
     this.luces = new Luces(this); this.luces.armar();   // (Fase 61) la luz de verdad
     // (Fase 63) Las puertas de verdad, la navegación que rodea los muebles y el cuarto que se ve (uno a la vez).
@@ -170,6 +171,9 @@ export class Casita {
     this._fs = () => { if (!document.fullscreenElement && !document.webkitFullscreenElement && this._pedida) { this._pedida = false; this._completa(false); } this._reparar(); };
     document.addEventListener("fullscreenchange", this._fs);
     document.addEventListener("webkitfullscreenchange", this._fs);
+    // (Fase 72) En la compu, Esc hace lo mismo que el botón de atrás del teléfono (dos veces: salir del juego).
+    this._esc = (e) => { if (e.key === "Escape" && this.vivo && !e.target?.closest?.("input, textarea, [contenteditable]")) { e.preventDefault(); try { history.back(); } catch (er) { /* nada */ } } };
+    addEventListener("keydown", this._esc);
     this._gira = () => this._reparar();
     window.addEventListener("orientationchange", this._gira);
     this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); this._programarRayo(); if (this.raiz.classList.contains("lluvia-cv")) this.lluviaF?.prender(); };
@@ -202,6 +206,7 @@ export class Casita {
     this.app.audio?.mantenerDespierto?.("casita", false);
     this.app.audio?.pausarParaVista?.(false, "casita");
     document.removeEventListener("fullscreenchange", this._fs);
+    removeEventListener("keydown", this._esc);
     document.removeEventListener("webkitfullscreenchange", this._fs);
     window.removeEventListener("orientationchange", this._gira);
     document.removeEventListener("visibilitychange", this._vis);
@@ -257,7 +262,44 @@ export class Casita {
     if (this.sel) { this._seleccionar(null); return true; }
     if (this.editando) { this._editar(false); return true; }
     if (this.raiz?.classList.contains("completa")) { this._completa(false); return true; }
+    // (Fase 72) Para salir del juego: atrás dos veces. La primera sale un avisito; si vuelves a tocar atrás pronto, sales.
+    if (Date.now() > (this._salirHasta || 0)) {
+      this._salirHasta = Date.now() + 2400;
+      this.salirN?.classList.remove("ver"); void this.salirN?.offsetWidth; this.salirN?.classList.add("ver");
+      clearTimeout(this._tSalir); this._tSalir = setTimeout(() => this.salirN?.classList.remove("ver"), 2400);
+      this.sonar("pop", { volumen: 0.4 });
+      return true;
+    }
+    this._salirHasta = 0; this.salirN?.classList.remove("ver");
+    if (this.editando) this._editar(false);
+    this.sonar("cerrar");
     return false;
+  }
+  /** (Fase 72) El nombre de un cuarto (el que le pusieron, o el de siempre). */
+  nombreCuarto(k) { const n = this.cfgCuarto(k).nombre; return typeof n === "string" && n.trim() ? n.trim().slice(0, 24) : cuarto(k).n; }
+  /** (Fase 72) El mapita de la casa (mapa.js). */
+  mapaCasa() { import("./mapa.js").then((M) => M.abrirMapa(this)).catch(() => aviso("No se pudo abrir el mapita", 2000)); }
+  /** (Fase 72) «Más»: clima y hora, voz en vivo, sonido y ajustes, pantalla completa, el mapita y salir del juego. */
+  _menuMas() {
+    this.cerrarMenu();
+    const completa = this.raiz.classList.contains("completa"), cl = this.climaB?.dataset.k || "sol";
+    const ops = [
+      ["mapa", "El mapita de la casa", () => this.mapaCasa()],
+      [{ sol: "sol", lluvia: "lluvia", tormenta: "rayo", extra: "extra" }[cl] || "sol", "El clima y la hora", () => P.clima(this)],
+      puedeVoz() ? ["mic", this.vozB.classList.contains("en-vivo") || this.vozB.classList.contains("llamando") ? "Colgar la voz" : "Hablar en vivo", () => this.voz.alternar()] : null,
+      ["sonido", "Sonido y ajustes", () => P.ajustes(this)],
+      [completa ? "salirCompleta" : "completa", completa ? "Salir de pantalla completa" : "Pantalla completa", () => this._completa()],
+      ["salir", "Salir del juego", () => this._volver()],
+    ].filter(Boolean);
+    const B = this.masB.getBoundingClientRect(), R = this.raiz.getBoundingClientRect();
+    const menu = el("div.ca-menu.ca-menu-mas", { role: "menu", "aria-label": "Más" }, [
+      el("div.ca-menu-lista", {}, ops.map(([k, t, al]) => el("button.ca-menu-b", { type: "button", role: "menuitem", dataset: { k }, onClick: () => { this.cerrarMenu(); al(); } }, [el("i", { html: ICO[k] || ICO.corazon }), el("span", { text: t })]))),
+    ]);
+    this.raiz.append(menu);
+    menu.style.right = Math.max(8, R.right - B.right) + "px"; menu.style.top = (B.bottom - R.top + 6) + "px";
+    requestAnimationFrame(() => menu.classList.add("ver"));
+    this.menu = menu;
+    this.sonar("pop", { volumen: 0.5 });
   }
 
   _armarCuartos() {
@@ -338,9 +380,15 @@ export class Casita {
     this.guardadoN = el("small.ca-hud-guardado", { text: "Todo guardado", dataset: { k: "listo" } });
     this.completaB = boton("completa", "Pantalla completa", () => this._completa());
     this.completaB.querySelector("span").textContent = "Completa";
-    this.hudN = el("div.ca-hud", {}, [
-      el("div.ca-hud-izq", {}, [this.nombreN, el("div.ca-hud-linea", {}, [this.estadoN, this.guardadoN])]),
-      el("div.ca-hud-der", {}, [this.mensajesB = boton("mensajes", "Mensajes", () => this.mensajes.barra()), boton("vestir", "Vestir", () => this.vestidor()), boton("acomodar", "Acomodar", () => this._editar(true)), this.completaB]),
+    // (Fase 72) La barra de arriba ya no tapa el cuarto: la casita se acomoda debajo de ella (ver _medir). A la
+    // izquierda, el cuarto donde estás (al tocarlo se abre el mapita de la casa); a la derecha, lo de siempre y «Más»
+    // (clima, voz, sonido, pantalla completa y salir). Ya no hay barra de «Volver atrás»: se sale con el botón de atrás
+    // del teléfono (dos veces).
+    this.mudoB = el("button.ca-r.mudo", { type: "button", "aria-label": "Silenciar mi micrófono", title: "Silenciar mi micrófono", hidden: "", onClick: () => this.voz.silenciar() }, [el("i", { html: ICO.mudo }), el("span", { text: "Micro" })]);
+    this.masB = boton("puntos", "Más", () => this._menuMas());
+    this.hudN = el("div.ca-hud.v72", {}, [
+      el("button.ca-hud-izq", { type: "button", title: "El mapita de la casa", "aria-label": "Abrir el mapita de la casa", onClick: () => this.mapaCasa() }, [el("i.ca-hud-mapa", { html: ICO.mapa }), el("span.ca-hud-txt", {}, [this.nombreN, el("span.ca-hud-linea", {}, [this.estadoN, this.guardadoN])])]),
+      el("div.ca-hud-der", {}, [this.mudoB, this.mensajesB = boton("mensajes", "Mensajes", () => this.mensajes.barra()), boton("vestir", "Vestir", () => this.vestidor()), boton("acomodar", "Acomodar", () => this._editar(true)), this.masB]),
     ]);
     this.badgeN = el("b.ca-badge", { hidden: "", "aria-label": "Sin leer" });
     this.mensajesB.append(this.badgeN);
@@ -367,35 +415,32 @@ export class Casita {
     ]);
     {
       const gb = this.selGirarB; let gi = null;
-      gb.addEventListener("pointerdown", (e) => { const r = this.sel; if (!r) return; e.preventDefault(); gi = { id: e.pointerId, x: e.clientX, g0: giroDe(r.o), g: giroDe(r.o), mov: false }; try { gb.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } });
+      gb.addEventListener("pointerdown", (e) => { const r = this.sel; if (!r) return; e.preventDefault(); gi = { id: e.pointerId, x: e.clientX, g0: this._giro(r.d, r.o), g: this._giro(r.d, r.o), paso: soloFrenteAtras(r.d) ? 180 : 90, mov: false }; try { gb.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } });
       gb.addEventListener("pointermove", (e) => {
         if (!gi || e.pointerId !== gi.id) return;
         const dx = e.clientX - gi.x;
         if (Math.abs(dx) > 6) gi.mov = true;
         if (!gi.mov || !this.sel) return;
         // (Fase 71) Cuatro vistas: arrastrando, cada tantito cambia a la siguiente (frente, lado, espaldas, lado).
-        const g = (((gi.g0 + Math.round(dx / 40) * 90) % 360) + 360) % 360;
+        const g = (((gi.g0 + Math.round(dx / 40) * gi.paso) % 360) + 360) % 360;
         if (g !== gi.g) { gi.g = g; this._dibujarObj(this.sel, { ...this.sel.o, e: { ...(this.sel.o.e || {}), giro: g } }); this.sonar("clic", { volumen: 0.3 }); }
       });
-      const fin = (e) => { if (!gi || e.pointerId !== gi.id) return; const G = gi; gi = null; if (this.sel) this._girar(this.sel, G.mov ? G.g : (G.g0 + 90) % 360); };
+      const fin = (e) => { if (!gi || e.pointerId !== gi.id) return; const G = gi; gi = null; if (this.sel) this._girar(this.sel, G.mov ? G.g : (G.g0 + G.paso) % 360); };
       gb.addEventListener("pointerup", fin);
       gb.addEventListener("pointercancel", (e) => { if (gi && e.pointerId === gi.id) { gi = null; if (this.sel) this._dibujarObj(this.sel, this.sel.o); } });
-      gb.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && this.sel) { e.preventDefault(); this._girar(this.sel, (giroDe(this.sel.o) + 90) % 360); } });
+      gb.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && this.sel) { e.preventDefault(); this._girar(this.sel, (this._giro(this.sel.d, this.sel.o) + (soloFrenteAtras(this.sel.d) ? 180 : 90)) % 360); } });
     }
-    this.volverN = el("div.ca-barra", {}, [
-      el("button.ca-volver", { type: "button", onClick: () => this._volver() }, [el("i", { html: ICO.volver }), el("span", { text: "Volver atrás" })]),
-      this.climaB = el("button.ca-ajustes-b.clima", { type: "button", "aria-label": "El clima y la hora", title: "El clima y la hora", html: ICO.sol, onClick: () => P.clima(this) }),
-      this.vozB = el("button.ca-ajustes-b.voz", { type: "button", "aria-label": "Voz en vivo", title: "Hablar en vivo los dos", html: ICO.mic, hidden: puedeVoz() ? null : "", onClick: () => this.voz.alternar() }),
-      this.mudoB = el("button.ca-ajustes-b.mudo", { type: "button", "aria-label": "Silenciar mi micrófono", title: "Silenciar mi micrófono", html: ICO.mudo, hidden: "", onClick: () => this.voz.silenciar() }),
-      el("button.ca-ajustes-b", { type: "button", "aria-label": "Ajustes", title: "Ajustes", html: ICO.sonido, onClick: () => P.ajustes(this) }),
-    ]);
+    // (Fase 72) Lo de la barra de abajo ahora vive en «Más» (estos botones guardan su estado: clima, voz).
+    this.climaB = el("i", { html: ICO.sol });
+    this.vozB = el("i", { html: ICO.mic });
+    this.salirN = el("div.ca-salir-aviso", { role: "status", "aria-live": "polite" }, [el("i", { html: ICO.corazon }), el("span", { text: "¿Quieres salir del juego? Toca atrás otra vez" })]);
     this.flashN = el("i.ca-flash", { "aria-hidden": "true" });
     // (Fase 64) Volver a ver a tu monito (si moviste la cámara): chiquito y discreto.
     this._enfocarB = el("button.ca-enfocar", { type: "button", "aria-label": "Ver a mi monito", title: "Ver a mi monito", html: ICO.enfocar, onClick: () => this.enfocar() });
     // (Fase 67) La canasta de lo que recogen en el patio (con cuántas cosas trae).
     this.canastaB = el("button.ca-canasta-b", { type: "button", "aria-label": "La canasta", title: "La canasta", hidden: "", onClick: () => this._abrirCanasta() }, [el("i.ca-canasta-ico"), el("b.ca-canasta-n")]);
     this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN, this._enfocarB, this.canastaB);
-    this.raiz.append(this.selN, this.volverN);
+    this.raiz.append(this.selN, this.salirN);
   }
 
   /** (Fase 67) La canasta: el botoncito (en el patio, o donde sea si trae algo) y su panel. */
@@ -567,8 +612,10 @@ export class Casita {
     if (!vh || !vw) return;
     // El alto manda, pero en un teléfono parado no se agranda tanto que no quepa casi nada de un cuarto.
     // (Abajo se deja lugar para los cuartitos (o, al acomodar, para el cajón): ahí se ve el piso, que sigue.)
-    const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 58;
-    this.k = lim(Math.min((vh - abajo) / H, vw / 400), 0.42, 1.45);
+    const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 8;
+    // (Fase 72) Arriba se deja libre lo que ocupa la barra (o la de Acomodar): el techo y los focos ya no quedan tapados.
+    const arriba = this._arribaLibre();
+    this.k = lim(Math.min((vh - abajo - arriba) / H, vw / 400), 0.42, 1.45);
     // (Fase 70) Pixel parejo: que cada cuadrito (4 del mundo) mida un número ENTERO de pixeles de la pantalla. Si no,
     // unos cuadritos salen de 2 y otros de 3 pixeles y las cosas se ven chuecas. Se ajusta poquito (a lo más 12 %),
     // primero para abajo (para que quepa).
@@ -581,7 +628,8 @@ export class Casita {
     }
     // (Fase 64) En el patio grande el mundo es más hondo: se desliza también para abajo (y se ve un poquito de cielo).
     const mapa = !!cuarto(this.vistaCuarto || "sala").mapa;
-    this.offY = mapa ? MAPA.arriba * this.k : Math.max(0, vh - abajo - H * this.k);
+    // (Fase 72) Pegadita debajo de la barra: lo que sobre abajo es el subterráneo (antes sobraba arriba, junto al techo).
+    this.offY = mapa ? MAPA.arriba * this.k : arriba;
     this._moverMundo();
     this.mundo.style.setProperty("--techo", (-this.offY / this.k).toFixed(1) + "px");
     // (Fase 63) El lienzo mide sólo el cuarto que se ve: no se puede deslizar a los otros (y quedan ocultos).
@@ -589,6 +637,15 @@ export class Casita {
     this.lienzo.style.height = (mapa ? Math.round((MAPA.alto + MAPA.arriba) * this.k) : vh) + "px";
     this._ubicarSel();
     this._profundidad();
+  }
+  /** (Fase 72) Cuánto mide lo de arriba (la barra con las necesidades, o la de Acomodar): ahí no se pone la casita. */
+  _arribaLibre() {
+    const V = this.vistaN.getBoundingClientRect(), b = this.editando ? this.edicionN?.querySelector(".ca-ed-arriba") : this.necesidades?.n;
+    if (!b || !V.height) return 0;
+    // (Si viene entrando deslizada, se cuenta ya puesta en su lugar.)
+    let ty = 0; try { const m = getComputedStyle(b).transform; if (m && m !== "none") ty = new DOMMatrixReadOnly(m).m42; } catch (e) { /* nada */ }
+    const R = b.getBoundingClientRect();
+    return Math.max(0, Math.min(V.height * 0.3, R.bottom - ty - V.top + 6));
   }
   /** `_subir`: cuánto se sube la casita para que tu monito y su burbujita se vean arriba del teclado. */
   _moverMundo() { this.mundo.style.transform = `translate(${(-inicioDe(this.vistaCuarto || "sala") * this.k).toFixed(1)}px, ${(this.offY - (this._subir || 0)).toFixed(1)}px) scale(${this.k.toFixed(4)})`; }
@@ -638,19 +695,75 @@ export class Casita {
     // Quieto (abrir la burbujita, sentarse…): sólo se asegura de que se vea, con un deslizamiento suave.
     if (!this.yo.n.classList.contains("camina") && !this.yo._enRuta) { if (fuera()) v.scrollTo({ left: px - v.clientWidth / 2, top: mapa ? py - v.clientHeight / 2 : 0, behavior: "smooth" }); return; }
     if (this._rqCam) return;
-    const paso = () => {
+    // (Fase 72) Cámara suave de verdad: sigue una posición con decimales (no salta de pixel en pixel), sin zona muerta
+    // que la haga arrancar y frenar a tirones, con un acercamiento exponencial que no depende de los cuadros por segundo
+    // y que, al llegar, se asienta despacito en lugar de pararse en seco.
+    let cx = v.scrollLeft, cy = v.scrollTop, t0 = performance.now(), quieto = 0;
+    const paso = (ahora) => {
       this._rqCam = 0;
-      // (Sólo mientras camina: al llegar la vista se queda quieta; tampoco si escribes, si mueves la cámara o elegiste un cuarto.)
-      if (!this.vivo || this._dedoAbajo || this._congelado || this._camLibre || performance.now() < (this._camPausa || 0) || (!this.yo.n.classList.contains("camina") && !this.yo._enRuta)) return;
+      if (!this.vivo || this._dedoAbajo || this._congelado || this._camLibre || this._pellizcando || performance.now() < (this._camPausa || 0)) return;
+      const anda = this.yo.n.classList.contains("camina") || this.yo._enRuta;
       const R = this.yo.n.getBoundingClientRect(), V = v.getBoundingClientRect();
-      const dx = R.left + R.width / 2 - V.left - v.clientWidth / 2, dy = R.top + R.height * 0.5 - V.top - v.clientHeight / 2;
-      // Zona muerta en medio; afuera de ella, se acerca suave (con tope de velocidad: la vista nunca brinca).
-      const tope = this.yo.n.classList.contains("corre") ? 20 : 14;
-      if (Math.abs(dx) > v.clientWidth * 0.12) v.scrollLeft += lim(dx * 0.08, -tope, tope);
-      if (mapa && Math.abs(dy) > v.clientHeight * 0.12) v.scrollTop += lim(dy * 0.08, -tope, tope);
-      this._rqCam = requestAnimationFrame(paso);
+      // (Si alguien más movió la vista —el dedo, otro cuarto—, se parte de donde está.)
+      if (Math.abs(v.scrollLeft - Math.round(cx)) > 2) cx = v.scrollLeft;
+      if (Math.abs(v.scrollTop - Math.round(cy)) > 2) cy = v.scrollTop;
+      const metaX = lim(cx + (R.left + R.width / 2 - V.left - v.clientWidth / 2), 0, Math.max(0, v.scrollWidth - v.clientWidth));
+      const metaY = lim(cy + (R.top + R.height * 0.5 - V.top - v.clientHeight / 2), 0, Math.max(0, v.scrollHeight - v.clientHeight));
+      const dt = Math.min(0.05, Math.max(0.001, (ahora - t0) / 1000)); t0 = ahora;
+      const a = 1 - Math.exp(-dt * (anda ? 5.2 : 3.4));
+      cx += (metaX - cx) * a; if (mapa) cy += (metaY - cy) * a;
+      v.scrollLeft = cx; if (mapa) v.scrollTop = cy;
+      quieto = !anda && Math.abs(metaX - cx) < 0.8 && (!mapa || Math.abs(metaY - cy) < 0.8) ? quieto + 1 : 0;
+      if (quieto < 3) this._rqCam = requestAnimationFrame(paso);
     };
     this._rqCam = requestAnimationFrame(paso);
+  }
+  /** (Fase 72) PELLIZCAR para acercar o alejar (dos dedos; en la compu, la rueda con Ctrl o el pellizco del touchpad):
+   *  la casita se agranda o se achica desde donde están tus dedos y, al soltar, regresa sola a como estaba, suavecito. */
+  _pellizco() {
+    const v = this.vistaN, L = this.lienzo;
+    let p0 = null, tw = 0;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const centro = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+    const empezar = (c) => {
+      const R = L.getBoundingClientRect();
+      L.style.transformOrigin = `${(c[0] - R.left).toFixed(0)}px ${(c[1] - R.top).toFixed(0)}px`;
+      L.style.transition = "none"; this._pellizcando = true; cancelAnimationFrame(this._rqCam); this._rqCam = 0;
+    };
+    const soltar = () => {
+      L.style.transition = "transform .48s cubic-bezier(.22, .9, .3, 1.12)"; L.style.transform = "";
+      clearTimeout(this._tPel); this._tPel = setTimeout(() => { this._pellizcando = false; L.style.transition = ""; L.style.transformOrigin = ""; }, 500);
+    };
+    v.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && !this.arrastrandoId) { p0 = { d: dist(e.touches) || 1, c: centro(e.touches) }; empezar(p0.c); } }, { passive: true });
+    v.addEventListener("touchmove", (e) => {
+      if (!p0 || e.touches.length !== 2) return;
+      e.preventDefault();
+      const s = lim(dist(e.touches) / p0.d, 0.62, 2.4), c = centro(e.touches);
+      L.style.transform = `translate(${(c[0] - p0.c[0]).toFixed(1)}px, ${(c[1] - p0.c[1]).toFixed(1)}px) scale(${s.toFixed(3)})`;
+    }, { passive: false });
+    const fin = (e) => { if (!p0 || e.touches.length >= 2) return; p0 = null; soltar(); };
+    v.addEventListener("touchend", fin); v.addEventListener("touchcancel", fin);
+    // En la compu: Ctrl + rueda (o el pellizco del touchpad) acerca o aleja; al dejar de moverla, regresa sola.
+    let s = 1;
+    v.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      if (!this._pellizcando) { empezar([e.clientX, e.clientY]); s = 1; }
+      s = lim(s * Math.exp(-e.deltaY * 0.004), 0.62, 2.4);
+      L.style.transform = `scale(${s.toFixed(3)})`;
+      clearTimeout(tw); tw = setTimeout(soltar, 420);
+    }, { passive: false });
+  }
+  /** (Fase 72) Al mandar un mensaje: la cámara se acerca suavecito a tu monito (con su burbujita) y regresa sola. */
+  zoomMensaje() {
+    if (reducido() || this._pellizcando || !this.vivo) return;
+    const L = this.lienzo, C = this.yo.caja?.getBoundingClientRect(), R = L.getBoundingClientRect();
+    if (!C || !C.width) return;
+    L.style.transformOrigin = `${(C.left + C.width / 2 - R.left).toFixed(0)}px ${(C.top - R.top + C.height * 0.3).toFixed(0)}px`;
+    try {
+      L.animate([{ transform: "scale(1)" }, { transform: "scale(1.22)", offset: 0.28 }, { transform: "scale(1.22)", offset: 0.72 }, { transform: "scale(1)" }],
+        { duration: 2600, easing: "cubic-bezier(.45, 0, .25, 1)" }).onfinish = () => { if (!this._pellizcando) L.style.transformOrigin = ""; };
+    } catch (e) { /* nada */ }
   }
   /** (Fase 64) El botoncito para volver a ver a tu monito: sale si moviste la cámara o si tu monito no se ve. */
   _verEnfocar() {
@@ -766,7 +879,7 @@ export class Casita {
   _estado() {
     if (!this.estadoN) return;
     const c = enCuarto(this.suyo?.gx || 0).c;
-    this.estadoN.textContent = !this._parejaAqui ? `${this.pareja} no está ahorita` : c === this.vistaCuarto ? `${this.pareja} está aquí` : `${this.pareja} está en ${cuarto(c).n}`;
+    this.estadoN.textContent = !this._parejaAqui ? `${this.pareja} no está ahorita` : c === this.vistaCuarto ? `${this.pareja} está aquí` : `${this.pareja} está en ${this.nombreCuarto(c)}`;
   }
   /** Ver un punto del mundo (cambia al cuarto donde está). */
   verX(gx, gy = null) { this._mostrarCuarto(enCuarto(gx).c, gx, gy); }
@@ -778,8 +891,8 @@ export class Casita {
     if (c === this.cuartoActual && this._pintado) return;
     this._pintado = true;
     this.cuartoActual = c;
-    this.nombreN.textContent = cuarto(c).n; this._estado();
-    this.edCuartoN.textContent = cuarto(c).n;
+    this.nombreN.textContent = this.nombreCuarto(c); this._estado();
+    this.edCuartoN.textContent = this.nombreCuarto(c);
     for (const b of this.cuartosB.children) { const on = b.dataset.k === c; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); }
     this._musicas();
     this._lejos();
@@ -875,7 +988,7 @@ export class Casita {
     const C = colorDe(r.d, o.e);
     const arte = r.n.querySelector(":scope > .ca-obj-arte") || r.n.appendChild(el("div.ca-obj-arte"));
     // (Fase 64) Girado: se ve desde ese ángulo (se prepara un ratito; mientras, el dibujo de siempre).
-    const g = this._girable(r.d) ? giroDe(o) : 0, t = (r._tg = (r._tg || 0) + 1);
+    const g = this._giro(r.d, o), t = (r._tg = (r._tg || 0) + 1);
     if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
     // (Fase 67) De frente también es pixel de verdad: la imagen en cuadritos abajo y el dibujo encima con lo quieto
     // transparente (así se sigue tocando donde tiene forma y lo que se mueve se sigue moviendo).
@@ -910,6 +1023,8 @@ export class Casita {
     });
   }
   /** (Fase 64) Lo que se puede girar: lo del piso (las mascotas no, ellas solitas se voltean). */
+  /** (Fase 72) La vista con que se dibuja una cosa: lo plano sólo de frente o de espaldas (lo guardado de lado cae ahí). */
+  _giro(d, o) { if (!this._girable(d)) return 0; const g = giroDe(o); return soloFrenteAtras(d) && g % 180 ? (g === 90 ? 0 : 180) : g; }
   _girable(d) { return d.capa === "piso" && !d.mascota && !d.noGira && d.k !== "cosita"; }
   /** (Fase 64) Qué herramienta de limpieza trae tu monito (barrer, trapear, aspirar, sacudir, regar) o "". */
   herramienta() { return COSAS_MANO[this.yo.lleva]?.herramienta || ""; }
@@ -1372,7 +1487,7 @@ export class Casita {
     // (Fase 64) Si la cosa está girada, el asiento gira con ella y el monito mira hacia donde mira el mueble.
     // (Fase 65) Llega por el lado hacia donde mira el asiento, se voltea de espaldas a él y se sienta (bajando, con su
     // apachurradito); con más estatura, la cadera queda igual en el asiento y las piernas cuelgan más.
-    const sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._girable(r.d) ? giroDe(r.o) : 0, sx), gx = r.gx + G.dx;
+    const sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._giro(r.d, r.o), sx), gx = r.gx + G.dx;
     const esc = cuarto(r.o.c).afuera ? 1 : escala3d(r.o.c, r.o.y), ySit = r.o.y + G.dy + ((m.alto || 1) - 1) * 47 * esc;
     const sienta = l.pose === "sentado", orden = ++m.orden;
     const [lx, ly] = this.nav.libre(r.o.c, gx + (sienta ? G.llega[0] : 0), lim(r.o.y + (sienta ? G.llega[1] : 22), FONDO, frenteDe(r.o.c)));
@@ -1405,7 +1520,7 @@ export class Casita {
     const l = r.d.lugares?.[jx], tk = (m._t3 = (m._t3 || 0) + 1), clave = `${r.o.id}:${jx}`;
     if (!l) return;
     try {
-      const g = this._girable(r.d) ? giroDe(r.o) : 0;
+      const g = this._giro(r.d, r.o);
       const [M, vg] = await Promise.all([modelo3d(m.ropa), vistaGirada(r.d, r.o.e, colorDe(r.d, r.o.e), g)]);
       if (m._t3 !== tk || m.mueble !== clave || !this.objs.has(r.o.id) || !this.vivo) return;
       const v = vg && !vg.plano ? vg : null, cel = CEL3D * (m.alto || 1), L = lugar3d(M, r.d, l, jx, v, cel);
@@ -1498,7 +1613,7 @@ export class Casita {
     const libres = r.d.lugares.map((_, i) => i).filter((i) => !this.ocupado(this.suyo, `${o.id}:${i}`));
     const j = jx != null && libres.includes(jx) ? jx : libres[0];
     if (j == null) { this.decir("Ya está ocupado", false); this.sonar("nop"); return false; }
-    const l = r.d.lugares[j], sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._girable(r.d) ? giroDe(r.o) : 0, sx);
+    const l = r.d.lugares[j], sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._giro(r.d, r.o), sx);
     const { c, x } = enCuarto(r.gx + G.dx);
     this.sync.yo({ c, x: Math.round(x), y: Math.round(r.o.y + G.dy), mira: G.mira || this.yo.mira, accion: l.pose, mueble: `${o.id}:${j}` });
     const ok = await this._irLugar(this.yo, r, j);
@@ -1883,7 +1998,7 @@ export class Casita {
       cancelAnimationFrame(this._rqAuto);
       if (G.arrastra) { this._soltarObj(G, e); return; }
       if (G.cargando) { this._soltarMono(G, e); return; }
-      if (cancelado || G.mov > 10 || performance.now() - G.t0 > 700 || this._mirando) return;   // (dedo presionado = sólo mirar)
+      if (cancelado || G.mov > 10 || performance.now() - G.t0 > 700 || this._mirando || this._pellizcando) return;   // (dedo presionado = sólo mirar; pellizco = zoom)
       // (Fase 63) Una puerta: tu monito va, la abre y entra (al acomodar: eliges a dónde lleva).
       const pu = G.blanco?.closest?.(".ca-puerta");
       if (pu && !G.mono) return this.puertasN.tocar(pu.dataset.puerta);
@@ -2154,7 +2269,7 @@ export class Casita {
   _girar(r, g) {
     if (!r || !this._girable(r.d)) return;
     const id = r.o.id;
-    if (giroDe(r.o) !== g) { this._guardarObj(r, { e: { ...(r.o.e || {}), giro: g } }, "whoosh"); aviso(NOMBRE_VISTA[giroDe({ e: { giro: g } })], 900); }
+    if (this._giro(r.d, r.o) !== g) { this._guardarObj(r, { e: { ...(r.o.e || {}), giro: g } }, "whoosh"); aviso(NOMBRE_VISTA[giroDe({ e: { giro: g } })], 900); }
     else this._dibujarObj(r, r.o);
     const n = this.objs.get(id);
     if (n) { this.sel = null; this._seleccionar(n); }

@@ -192,7 +192,36 @@ function ventana() {
   };
 }
 
+/** (Fase 72) LA PUERTA DE LA CASA en pixel: marco de arco color crema, el hueco oscurito y la hoja del color elegido
+ *  (con su ventanita de corazón, dos tableros y su perilla) que se abre de verdad (es su propia capa). */
+function puertaCasa() {
+  const W = 21, H = 44, L = lienzo(W, H), cx = 10, ay = 10;
+  const enArco = (x, y, r) => y >= ay || Math.hypot(x + 0.5 - (cx + 0.5), y + 0.5 - ay) <= r;
+  for (let y = 0; y < H - 1; y++) for (let x = 0; x < W; x++) {
+    if (!enArco(x, y, 10.6)) continue;
+    const marco = !enArco(x, y, 8.6) || x <= 1 || x >= 19;
+    L.pon(x, y, marco ? (x < cx ? (x === 0 || !enArco(x, y, 10) ? "E" : "C") : x === 20 || !enArco(x, y, 10) ? "F" : "D") : "%");
+  }
+  L.caja(0, H - 1, W - 1, H - 1, "E");
+  // La hoja (su capa): del color elegido, con orilla, tableros, ventanita de corazón y perilla.
+  const hoja = [];
+  const cor = [".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..."];
+  for (let y = 0; y < H - 1; y++) for (let x = 2; x <= 18; x++) {
+    if (!enArco(x, y, 8.6)) continue;
+    const orilla = x === 2 || x === 18 || !enArco(x, y - 1, 8.6);
+    let c = orilla ? "(" : x === 3 ? "]" : x === 17 ? ")" : "[";
+    const tab = (y0, y1) => !orilla && y >= y0 && y <= y1 && x >= 5 && x <= 15;
+    if (tab(23, 39)) c = y === 23 || x === 5 ? ")" : y === 39 || x === 15 ? "{" : "]";
+    const ci = x - 7, cj = y - 9;
+    if (cor[cj]?.[ci] === "X") c = cj < 2 && ci < 3 ? "#" : "J";
+    hoja.push([x, y, c]);
+  }
+  hoja.push([15, 21, "o"], [16, 21, "n"], [15, 22, "n"], [16, 22, "l"]);
+  return { filas: L.filas(), capas: [{ clase: "puerta-b", p: hoja }] };
+}
+
 export const REDIBUJOS = {
+  puerta: () => { const v = puertaCasa(); return pix({ filas: v.filas, capas: v.capas, noGira: true }); },
   ventana: () => { const v = ventana(); return pix({ filas: v.filas, capas: v.capas, sinContorno: true }); },
   mesa: () => pix({ filas: mesa(), capas: FLORERO, hondo: 116 }),
   silla: () => pix({ filas: silla() }),

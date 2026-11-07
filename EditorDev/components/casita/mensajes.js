@@ -155,8 +155,13 @@ export class Mensajes {
     for (const n of [j.escena, j.vistaN.parentElement]) if (n?.scrollTop) n.scrollTop = 0;
     if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
   }
-  /** Pone la burbujita arriba de la cabeza de tu monito y, con el teclado abierto, sube la casita lo justo. */
+  /** Pone la burbujita arriba de la cabeza de tu monito y, con el teclado abierto, sube la casita lo justo.
+   *  (Fase 72: una sola vez por cuadro, aunque el teclado avise muchas veces mientras sale: así no tiembla.) */
   _ubicar() {
+    if (this._rqU) return;
+    this._rqU = requestAnimationFrame(() => { this._rqU = 0; this._ubicarYa(); });
+  }
+  _ubicarYa() {
     const j = this.j, n = this.barraN;
     if (!n || !this.abierto() || !j.vivo) return;
     if (j._congelado) this._sinDesplazar();
@@ -198,6 +203,8 @@ export class Mensajes {
     this.j.protegerSalida();
     this.mandar(t);
     this.barra(false);
+    // (Fase 72) Ya que se fue el teclado y la casita está en su lugar, la cámara se acerca suavecito a tu monito.
+    setTimeout(() => this.j.zoomMensaje?.(), 420);
   }
   _pintarLog() {
     if (!this.logN || this.logN.hidden) return;

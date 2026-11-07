@@ -67,8 +67,9 @@ void main() {
     abre = 1.0 - (1.0 - abre) * (1.0 - f);
     tinte += tono[i] * f; peso += f;
   }
-  abre = min(1.0, floor(abre * 10.0 + bayer(gl_FragCoord.xy) * 0.9) / 10.0);
-  float a = oscuro * (1.0 - abre * 0.86);
+  // (Fase 72) Escalones más finos (menos puntitos) y, con el foco del techo prendido, el cuarto queda bien alumbrado.
+  abre = min(1.0, floor(abre * 18.0 + bayer(gl_FragCoord.xy) * 0.9) / 18.0);
+  float a = oscuro * (1.0 - abre * 0.93);
   vec3 c = ambiente * a;
   if (peso > 0.0) c += (tinte / peso) * 0.055 * abre * smoothstep(0.05, 0.4, oscuro);
   // Luciérnagas chiquitas (afuera, de noche, sin lluvia).

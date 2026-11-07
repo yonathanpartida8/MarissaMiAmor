@@ -577,3 +577,35 @@ export function texSubsuelo(k, wm) {
     for (let n = 0; n < 3; n++) poner(4, 2, 5, 40, (x, y) => { pon(x, y, [236, 140, 160]); pon(x + 1, y + 1, [236, 140, 160]); pon(x + 2, y + 1, [220, 120, 146]); pon(x + 3, y, [236, 140, 160]); pon(x + 3, y - 1, [60, 40, 44]); });
   });
 }
+
+/* ═══ (Fase 72) LA PUERTA EN PIXEL: su marco (con moldura y un corazoncito) y su hoja del color del cuarto (tableros,
+ *  ventanita de corazón y perilla de latón). Un cuadrito = 4 del mundo; la hoja sigue abriéndose en 3D. ═══ */
+export function texPuerta(color = "#f2b1c6") {
+  const C = /^#?([0-9a-f]{6})$/i.test(color || "") ? rgb(color.startsWith("#") ? color : "#" + color) : [242, 177, 198];
+  const f = (k) => osc(C, k), cl = (t) => cla(C, t);
+  const marco = comoUrl("pmarco", 21, 42, ({ pon, caja }) => {
+    const O = [150, 110, 130], L = [255, 250, 246], M = [240, 226, 230], S = [206, 182, 194];
+    caja(0, 0, 21, 3, M); caja(0, 0, 21, 1, O); caja(0, 1, 21, 1, L);
+    caja(0, 3, 2, 39, L); caja(19, 3, 2, 39, S); for (let y = 0; y < 42; y++) { pon(0, y, O); pon(20, y, O); }
+    caja(2, 2, 17, 1, S);
+    for (const [x, y] of [[9, 1], [11, 1], [9, 2], [10, 2], [11, 2], [10, 3]]) pon(x, y > 2 ? 2 : y, [236, 120, 160]);
+    pon(10, 1, [255, 170, 200]);
+  });
+  const hoja = comoUrl("phoja|" + C.join(","), 17, 39, ({ pon, caja }) => {
+    caja(0, 0, 17, 39, C);
+    for (let y = 0; y < 39; y++) { pon(0, y, f(0.62)); pon(16, y, f(0.62)); pon(1, y, cl(0.18)); pon(15, y, f(0.88)); }
+    caja(0, 0, 17, 1, f(0.62)); caja(0, 38, 17, 1, f(0.5));
+    const tablero = (y0, y1) => {
+      caja(3, y0, 11, y1 - y0 + 1, cl(0.08));
+      for (let x = 3; x <= 13; x++) { pon(x, y0, f(0.82)); pon(x, y1, cl(0.22)); }
+      for (let y = y0; y <= y1; y++) { pon(3, y, f(0.82)); pon(13, y, cl(0.22)); }
+    };
+    tablero(3, 17); tablero(21, 35);
+    // La ventanita de corazón (vidrio claro) en el tablero de arriba.
+    const cor = [".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..."];
+    cor.forEach((fila, j) => [...fila].forEach((ch, i) => { if (ch === "X") pon(5 + i, 7 + j, j < 2 && i < 3 ? [255, 250, 252] : [255, 228, 240]); }));
+    // La perilla.
+    pon(13, 19, [255, 220, 130]); pon(14, 19, [214, 160, 70]); pon(13, 20, [214, 160, 70]); pon(14, 20, [170, 116, 60]);
+  });
+  return { marco: marco.url, hoja: hoja.url };
+}

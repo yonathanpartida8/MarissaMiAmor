@@ -24,6 +24,9 @@ export const ELEV_GIRO = ELEV;
 export const pasoGiro = 90;
 /** Cómo se llama cada una de las cuatro vistas. */
 export const NOMBRE_VISTA = { 0: "De frente", 90: "Lado izquierdo", 180: "De espaldas", 270: "Lado derecho" };
+/** (Fase 72) Lo plano o delgadito (una hamaca, la bici, un cuadro, una cerca…) de lado sería un palito sin sentido:
+ *  esas cosas sólo se ven de frente o de espaldas (al revés). Lo que trae su costado dibujado a mano, sí de lado. */
+export const soloFrenteAtras = (d) => !d.vistas && (d.forma === "plano" || (d.forma == null && PLANOS.test(d.k)) || hondura(d) / Math.max(1, d.w) < 0.25);
 /** El ángulo guardado de una cosa (0, 90, 180 o 270; lo de antes, girado libre, va a la vista más cercana). */
 export function giroDe(o) { const g = Math.round((+o?.e?.giro || 0) / pasoGiro) * pasoGiro; return ((g % 360) + 360) % 360; }
 /** La hondura de un mueble (en el mundo): lo que de verdad mide para atrás, sin ensancharlo. */

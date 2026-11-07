@@ -10,18 +10,20 @@
 import { el } from "../ui.js";
 import { CUARTOS, PUERTAS, COLOR_PUERTA, cuarto, inicioDe, PISO, H, FONDO, FRENTE, FONDO_3D, FRENTE_3D, proyectar } from "./cuartos.js";
 import { ICO } from "./iconos.js";
+import { texPuerta } from "./texturas.js";
 import * as P from "./paneles.js";
 
 export const PUERTA_T = 0.41;
 // (Fase 71) Puertas de tamaño normal (un poquito más altas que el monito, no gigantes): las de los lados ya no ocupan
 // la mitad de lo hondo de la pared.
-const U0 = 0.24, U1 = 0.58, ALTO_LADO = 160, ANCHO_A = 82, ALTO_A = 166;
+const U0 = 0.24, U1 = 0.58, ALTO_LADO = 160, ANCHO_A = 84, ALTO_A = 168;
 export const hondoPuerta = () => PISO + (H - PISO) * PUERTA_T;
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
-const nombre = (k) => cuarto(k).n;
+let nombreDe = (k) => cuarto(k).n;
+const nombre = (k) => nombreDe(k);
 
 export class Puertas {
-  constructor(j) { this.j = j; this.ap = new Map(); this.nodos = new Map(); }
+  constructor(j) { this.j = j; this.ap = new Map(); this.nodos = new Map(); if (j.nombreCuarto) nombreDe = (k) => j.nombreCuarto(k); }
 
   /** Las puertas de un cuarto ahorita (con su destino). */
   de(c) {
@@ -89,7 +91,9 @@ export class Puertas {
     if (p.pared === "atras") {
       // (Fase 64) La del patio está en la fachada de la casa (con su marco pintado): sin el muro suelto de afuera.
       const P0 = proyectar(x0 + p.x, PISO), s = cu.afuera ? 1 : P0.s, base = cu.mapa ? FONDO + 2 : cu.afuera ? PISO + 34 : PISO;
-      return el("div.ca-puerta.atras" + (cu.afuera ? ".afuera" : "") + (cu.mapa ? ".fachada" : "") + (p.quitada ? ".quitada" : ""), { ...comun, style: { left: (P0.x - ANCHO_A / 2).toFixed(1) + "px", top: (base - ALTO_A).toFixed(1) + "px", "--s3": s.toFixed(3), "--hoja": color } }, [
+      // (Fase 72) En pixel: el marco y la hoja (del color del cuarto) son dibujitos cuadrito por cuadrito.
+      let px = {}; try { const t = texPuerta(color); px = { "--marco-px": t.marco, "--hoja-px": t.hoja }; } catch (e) { /* se queda la de antes */ }
+      return el("div.ca-puerta.atras" + (cu.afuera ? ".afuera" : "") + (cu.mapa ? ".fachada" : "") + (p.quitada ? ".quitada" : "") + (px["--hoja-px"] ? ".px" : ""), { ...comun, style: { left: (P0.x - ANCHO_A / 2).toFixed(1) + "px", top: (base - ALTO_A).toFixed(1) + "px", "--s3": s.toFixed(3), "--hoja": color, ...px } }, [
         cu.afuera && !cu.mapa ? el("i.pu-muro") : null,
         el("i.pu-marco"), el("i.pu-hueco"), el("i.pu-hoja", {}, [el("i.pu-tablero.t1"), el("i.pu-tablero.t2"), el("i.pu-perilla")]), el("i.pu-umbral"), this._letrero(p),
       ].filter(Boolean));
@@ -178,7 +182,7 @@ export class Puertas {
       j.sonar("clic"); cerrar();
     };
     const otras = this.de(p.c).filter((q) => q.id !== p.id).length;
-    const opciones = CUARTOS.filter((c) => c.k !== p.c).map((c) => el("button.ca-pu-op" + (c.k === p.va ? ".on" : ""), { type: "button", onClick: () => elegir(c.k) }, [el("i", { html: ICO[c.k] || ICO.corazon }), el("span", { text: c.n })]));
+    const opciones = CUARTOS.filter((c) => c.k !== p.c && (!c.extra || this.j.cfgCuarto(c.k).tiene)).map((c) => el("button.ca-pu-op" + (c.k === p.va ? ".on" : ""), { type: "button", onClick: () => elegir(c.k) }, [el("i", { html: ICO[c.k] || ICO.cuartos }), el("span", { text: nombre(c.k) })]));
     if (p.pared !== "obj" && otras > 0) opciones.push(el("button.ca-pu-op.quitar", { type: "button", onClick: () => elegir("") }, [el("i", { html: ICO.borrar }), el("span", { text: "Sin puerta" })]));
     P.hoja(j, "¿A dónde lleva esta puerta?", el("div.ca-pu-opciones", {}, [el("p.ca-pu-ayuda", { text: p.va ? `Está en ${nombre(p.c)}. Ahorita lleva a ${nombre(p.va)}.` : `Aquí no hay puerta. Elige a dónde llevaría.` }), ...opciones]));
   }

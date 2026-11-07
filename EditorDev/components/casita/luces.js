@@ -46,6 +46,9 @@ export class Luces {
       if (!r.glow || r.o.c !== c || !r.glow.classList.contains("on")) continue;
       const b = r.d.brilla, v = r.v || { x: r.gx, y: r.o.y, s: 1 }, s = v.s;
       const x = v.x - x0 + ((r.o.f ? r.d.w - b.x : b.x) - r.d.w / 2) * s, y = v.y - (r.d.h - b.y) * s;
+      // (Fase 72) Un foco del techo es LA luz del cuarto: su brillito junto al foco y un charco grande, cálido, que
+      // llena todo el cuarto (paredes, muebles y piso), más fuerte debajo de él.
+      if (b.cuarto) { lista.push({ x, y, r: 230, k: rgb(b.c), i: 0.9 }, { x, y: Math.max(y + 260, 360), r: 1050, k: rgb(b.c), i: 1 }); continue; }
       lista.push({ x, y, r: Math.max(150, b.r * 2.1) * s, k: rgb(b.c), i: 1 });
     }
     // (Fase 71) Ya no hay foco pintado: la luz del cuarto la dan sus focos del techo (catalogo/techo.js), cada uno
@@ -82,11 +85,11 @@ export class Luces {
         }
         L = Math.min(1, L);
         // Escalones finos (pixel, sin degradado liso, pero sin anillos marcados).
-        const q = Math.min(1, Math.floor(L * 14) / 14);
+        const q = Math.min(1, Math.floor(L * 18) / 18);
         const o = (jj * W + ii) * 4, tot = Math.max(0.0001, kr + kg + kb ? (kr + kg + kb) / 3 / 200 : 1);
         const warm = L > 0 ? [kr / tot / 1.4, kg / tot / 1.4, kb / tot / 1.4].map((v) => Math.min(255, v)) : OSCURO;
         d[o] = OSCURO[0] * (1 - q) + warm[0] * q; d[o + 1] = OSCURO[1] * (1 - q) + warm[1] * q; d[o + 2] = OSCURO[2] * (1 - q) + warm[2] * q;
-        d[o + 3] = Math.round(255 * ((1 - q) * 0.96 + q * 0.16));
+        d[o + 3] = Math.round(255 * ((1 - q) * 0.96 + q * 0.1));
       }
       ctx.putImageData(img, 0, 0);
     }
