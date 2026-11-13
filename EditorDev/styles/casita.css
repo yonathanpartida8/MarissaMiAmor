@@ -2125,3 +2125,9 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-obj.e-anda .prop-anim { display: inline; }
 .ca-obj.e-anda :is(.prop-base, .prop-abierto) { display: none; }
 .ca-obj .prop-c { opacity: 0; }
+/* (Fase 77) Teléfono acostado: las necesidades van en la misma fila que la barra (entre el cuarto y los botones) y el
+   cuarto se ve más grande. Antes ocupaban un renglón entero y el cuarto quedaba chiquito y cortado abajo. */
+.ca.nec-fila .ca-hud.v72 .ca-hud-izq { flex: 0 1 auto; max-width: 34%; }
+.ca-hud.v72 > .ca-nec { position: relative; left: auto; right: auto; top: auto; z-index: auto; flex: 1 1 0; min-width: 0; align-self: center; }
+/* (Fase 77) «Mensajes» y «Acomodar» tocaban la orilla de su botón: letra un pelito más chica y apretadita, con aire. */
+.ca-hud.v72 .ca-r span { font-size: 9px; letter-spacing: -.2px; max-width: 44px; }

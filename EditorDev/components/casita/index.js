@@ -171,6 +171,16 @@ export class Casita {
     this._medir();
     this._ro = new ResizeObserver(() => this._medir());
     this._ro.observe(this.vistaN);
+    // (Fase 77) Escribiendo en un campo de la casita (buscar en Acomodar, el nombre de un cuarto…), el teclado achica la
+    // pantalla: la casita NO cambia de tamaño (antes se encogía y, al cerrarlo, quedaba más grande que antes). Al
+    // terminar, se mide una sola vez, cuando el teclado ya se fue. (La barra de mensajes tiene su propio cuidado.)
+    const campo = (n) => n && /^(INPUT|TEXTAREA)$/.test(n.tagName) && !/^(button|checkbox|radio|range|color|file)$/.test(n.type || "") && !n.closest?.(".ca-chat");
+    this.raiz.addEventListener("focusin", (e) => { if (campo(e.target)) { clearTimeout(this._tTecla); this._tecleando = true; } });
+    this.raiz.addEventListener("focusout", (e) => {
+      if (!campo(e.target)) return;
+      clearTimeout(this._tTecla);
+      this._tTecla = setTimeout(() => { if (campo(document.activeElement) && this.raiz?.contains(document.activeElement)) return; this._tecleando = false; if (this.vivo) this._medir(); }, 450);
+    });
     // (Fase 76) Mientras mueves la cámara, haces zoom o arrastras, no se preparan vistas (eso daba tirones y parpadeos).
     for (const ev of ["touchstart", "touchmove", "wheel", "pointerdown"]) this.vistaN.addEventListener(ev, () => pausarVistas(1500), { passive: true });
     this.vistaN.addEventListener("pointermove", (e) => { if (e.buttons || e.pointerType === "touch") pausarVistas(1500); }, { passive: true });
@@ -190,7 +200,7 @@ export class Casita {
     addEventListener("keydown", this._esc);
     this._gira = () => this._reparar();
     window.addEventListener("orientationchange", this._gira);
-    this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); this._programarRayo(); if (this.raiz.classList.contains("lluvia-cv")) this.lluviaF?.prender(); };
+    this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); if (cuarto(this.vistaCuarto || "sala").afuera) this.viento?.prender(); this._programarRayo(); if (this.raiz.classList.contains("lluvia-cv")) this.lluviaF?.prender(); };
     document.addEventListener("visibilitychange", this._vis);
     this._toque = (e) => this._alToque(e.detail || {});
     addEventListener("ed-toque-llega", this._toque);
@@ -295,7 +305,9 @@ export class Casita {
   mapaCasa() { import("./mapa.js").then((M) => M.abrirMapa(this)).catch(() => aviso("No se pudo abrir el mapita", 2000)); }
   /** (Fase 72) «Más»: clima y hora, voz en vivo, sonido y ajustes, pantalla completa, el mapita y salir del juego. */
   _menuMas() {
+    const eraMas = this.menu?.classList.contains("ca-menu-mas");
     this.cerrarMenu();
+    if (eraMas) return;
     const completa = this.raiz.classList.contains("completa"), cl = this.climaB?.dataset.k || "sol";
     const ops = [
       ["mapa", "El mapita de la casa", () => this.mapaCasa()],
@@ -548,6 +560,7 @@ export class Casita {
     // (Fase 63) La luz con WebGL 2 en TODOS los modos (los ligeros, a menos resolución y menos cuadros). Si el teléfono
     // no tiene WebGL 2, se queda el mapa de luz en lienzo (lo mismo, más sencillo).
     if (this.capa) this.capa.ajustar(nivel(k));
+    if (cuarto(this.vistaCuarto || "sala").afuera) this.viento?.prender();   // (Fase 77: de «sin efectos» a otro, el viento vuelve)
     if (!this.capa) {
       this.capa = crearCapaGL(this, nivel(k)); this._geo = null;
       if (this.capa) { this.capa.nv = nivel(k); this.escena.insertBefore(this.capa.n, this.hudN); }
@@ -657,13 +670,14 @@ export class Casita {
   /* ═════════════ Cámara y medidas ═════════════ */
   _medir() {
     // (Mientras escribes, la casita no cambia de tamaño aunque el teclado achique la pantalla.)
-    if (this._congelado) { this._moverMundo(); return; }
+    if (this._congelado || this._tecleando) { this._moverMundo(); return; }
     const vh = this.vistaN.clientHeight, vw = this.vistaN.clientWidth;
     if (!vh || !vw) return;
     // El alto manda, pero en un teléfono parado no se agranda tanto que no quepa casi nada de un cuarto.
     // (Abajo se deja lugar para los cuartitos (o, al acomodar, para el cajón): ahí se ve el piso, que sigue.)
     const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 0;
     // (Fase 72) Arriba se deja libre lo que ocupa la barra (o la de Acomodar): el techo y los focos ya no quedan tapados.
+    this._ubicarNec();
     const arriba = this._arribaLibre();
     // (Fase 73) Jugando, el cuarto llena el alto (en un teléfono parado se deja ver un poquito menos de ancho).
     this.k = lim(Math.min((vh - abajo - arriba) / H, vw / (this.editando ? 400 : 350)), 0.42, 1.45);
@@ -675,7 +689,8 @@ export class Casita {
       const kA = abajoN / (4 * dpr), kR = arribaN / (4 * dpr);
       if (abajoN >= 2 && (this.k - kA) / this.k <= 0.12) this.k = Math.max(0.42, kA);
       // (En pantallas de poca densidad, como la compu, cada escalón es grande: se deja subir un poco más.)
-      else if (arribaN >= 2 && Math.abs(kR - this.k) / this.k <= (n < 5 ? 0.1 : 0.06) && kR * H <= vh + 12) this.k = kR;
+      // (Fase 77: jugando, sin que se corte abajo más de un poquito: con el teléfono acostado se comía el frente del piso.)
+      else if (arribaN >= 2 && Math.abs(kR - this.k) / this.k <= (n < 5 ? 0.1 : 0.06) && kR * H <= vh + 12 && (this.editando || kR * H - (vh - arriba) <= kR * H * 0.04)) this.k = kR;
       // (Fase 72) Si ninguno queda cerca (en la compu, con la barra de arriba y el cajón), al escalón entero de abajo:
       // un poquito más chiquito, pero nítido y sin que nada lo tape.
       else if (abajoN >= 2 && kA >= 0.42) this.k = kA;
@@ -712,8 +727,20 @@ export class Casita {
     if (!b || !V.height) return 0;
     // (Si viene entrando deslizada, se cuenta ya puesta en su lugar.)
     let ty = 0; try { const m = getComputedStyle(b).transform; if (m && m !== "none") ty = new DOMMatrixReadOnly(m).m42; } catch (e) { /* nada */ }
-    const R = b.getBoundingClientRect();
-    return Math.max(0, Math.min(V.height * 0.3, R.bottom - ty - V.top + 6));
+    let fondo = b.getBoundingClientRect().bottom - ty;
+    // (Fase 77) Con las necesidades en la fila de la barra (teléfono acostado), lo que manda es lo más bajo de la barra.
+    if (!this.editando) for (const s of [".ca-hud-izq", ".ca-hud-der"]) { const h = this.raiz.querySelector(s); if (h) fondo = Math.max(fondo, h.getBoundingClientRect().bottom); }
+    return Math.max(0, Math.min(V.height * 0.3, fondo - V.top + 6));
+  }
+  /** (Fase 77) Teléfono acostado (poca altura y mucho ancho): las necesidades van en la misma fila que la barra, entre el
+   *  nombre del cuarto y los botones. Antes ocupaban un renglón entero y el cuarto quedaba chiquito y cortado abajo. */
+  _ubicarNec() {
+    const n = this.necesidades?.n, h = this.hudN, R = this.raiz.getBoundingClientRect();
+    if (!n || !h || !R.height) return;
+    const fila = R.height < 520 && R.width > R.height * 1.5;
+    if (fila && n.parentNode !== h) { this.raiz.classList.add("nec-fila"); h.insertBefore(n, h.querySelector(".ca-hud-der")); }
+    // (Si no cabe bien entre los dos —nombres largos, pantalla angosta—, se queda en su renglón de siempre.)
+    if (n.parentNode === h && (!fila || n.getBoundingClientRect().width < 250)) { this.raiz.classList.remove("nec-fila"); h.after(n); }
   }
   /** `_subir`: cuánto se sube la casita para que tu monito y su burbujita se vean arriba del teclado. */
   _moverMundo() { this.mundo.style.transform = `translate(${(-inicioDe(this.vistaCuarto || "sala") * this.k).toFixed(1)}px, ${(this.offY - (this._subir || 0)).toFixed(1)}px) scale(${this.k.toFixed(4)})`; }
@@ -798,6 +825,7 @@ export class Casita {
     // calcularla en cada cuadro, que daba tirones), y regresa junto con ella.
     const luz = () => this.capa?.n;
     const empezar = (c) => {
+      this._cancelarGesto?.();
       const R = L.getBoundingClientRect();
       L.style.transformOrigin = `${(c[0] - R.left).toFixed(0)}px ${(c[1] - R.top).toFixed(0)}px`;
       L.style.transition = "none"; this._pellizcando = true; cancelAnimationFrame(this._rqCam); this._rqCam = 0;
@@ -809,7 +837,7 @@ export class Casita {
       for (const n of [L, g]) if (n) { n.style.transition = "transform .48s cubic-bezier(.22, .9, .3, 1.12)"; n.style.transform = ""; }
       clearTimeout(this._tPel); this._tPel = setTimeout(() => { this._pellizcando = false; for (const n of [L, luz()]) if (n) { n.style.transition = ""; n.style.transformOrigin = ""; } this.capa?.ya?.(); }, 500);
     };
-    v.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && !this.arrastrandoId) { p0 = { d: dist(e.touches) || 1, c: centro(e.touches) }; empezar(p0.c); } }, { passive: true });
+    v.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && !this.arrastrandoId && !this.yo.n.classList.contains("cargado")) { p0 = { d: dist(e.touches) || 1, c: centro(e.touches) }; empezar(p0.c); } }, { passive: true });
     v.addEventListener("touchmove", (e) => {
       if (!p0 || e.touches.length !== 2) return;
       e.preventDefault();
@@ -953,6 +981,7 @@ export class Casita {
     if (cu.mapa) { const y = gy ?? (enCuarto(this.yo.gx).c === k ? this.yo.y : MAPA.fondo + 160); v.scrollTop = Math.max(0, (y + MAPA.arriba - 70) * this.k - v.clientHeight / 2); }
     else v.scrollTop = 0;
     if (cambio) { this._camLibre = false; this._pintado = false; this.puertasN.pintar(); this.suciedad?.pintar(); try { this.luces?.pintar(); } catch (e) { /* nada */ } }
+    if (cu.afuera) this.viento?.prender();   // (Fase 77: afuera se prende; adentro se apaga solo)
     this._alDeslizar();
   }
   /** Lo que dice el HUD de tu amorcito (Fase 63: en qué cuarto anda, si no está contigo). */
@@ -1503,6 +1532,9 @@ export class Casita {
     this._pose(m, "");
     m.n.classList.remove("entra");
     gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, frenteDe(enCuarto(gx).c));
+    // (Fase 77) Si iba a medio paso y le das otra orden, parte de donde DE VERDAD está (lo que se ve), no de la meta
+    // a la que iba: antes la ruta y la velocidad se calculaban desde la meta vieja y se veía un jalón.
+    if (!tramo && !ya) this._dondeVa(m);
     const ci = enCuarto(m.gx).c, cf = enCuarto(gx).c;
     if (!tramo && !ya) {
       m.tkPuerta = (m.tkPuerta || 0) + 1; m._cruzando = false;   // (si iba cruzando una puerta, se cancela)
@@ -1562,6 +1594,7 @@ export class Casita {
     m.n.style.zIndex = zMono(Math.max(m.y, y));
     // (Fase 68) Lo chiquito del piso por donde pasa se patea.
     if (m === this.yo && s > 0.15 && !ya) this.fisica?.tramo(m, m.gx, m.y, gx, y, s, corre);
+    m._paso = { gx0: m.gx, y0: m.y, gx1: gx, y1: y, t0: performance.now(), ms: s * 1000, frena };
     this._ponerMono(m, gx, y);
     m.gx = gx; m.y = y;
     m.llega = performance.now() + s * 1000;
@@ -1590,6 +1623,17 @@ export class Casita {
       luego?.();
     }, s * 1000 + 30);
     if (m.quien === "yo" && !ya) this._seguir(gx);
+  }
+  /** (Fase 77) Dónde está el monito ahorita mismo si va a medio paso (el paso es una transición de CSS: su posición
+   *  guardada ya es la meta). Se deja `m.gx`/`m.y` en lo que se ve, para que la siguiente orden salga de ahí. */
+  _dondeVa(m) {
+    const P = m._paso;
+    if (!P) return;
+    const t = performance.now() - P.t0;
+    if (t >= P.ms || P.ms <= 0) { m._paso = null; return; }
+    const f = Math.max(0, Math.min(1, t / P.ms)), q = P.frena ? 1 - (1 - f) * (1 - f) : f;   // (frenando: curva que empieza rápido)
+    m.gx = P.gx0 + (P.gx1 - P.gx0) * q; m.y = P.y0 + (P.y1 - P.y0) * q;
+    m._paso = null;
   }
   /** (Fase 63) Voltear con un giro suavecito (no de golpe): de frente, de espaldas o de lado. */
   _orientar(m, hacia) {
@@ -1722,7 +1766,9 @@ export class Casita {
   _quitar3d(m, animar = true) {
     const S = m._3d, n = m._img3d;
     m._3d = null; m._t3 = (m._t3 || 0) + 1; clearTimeout(m._tParp); m._cara3d = null;
-    const fin = () => { n?.remove(); if (!m._3d) m.n.classList.remove("en3d"); };
+    // (Fase 77) Si en ese ratito ya se volvió a sentar (la misma imagen se reusa), no se quita: antes desaparecía
+    // sentado hasta su siguiente parpadeo.
+    const fin = () => { if (m._3d) return; n?.remove(); m.n.classList.remove("en3d"); };
     if (!S || !n || !animar || reducido() || !n.isConnected) { fin(); return; }
     const [x, y, z] = S.L.ancla;
     m._3d = S; this._cuadro3d(m, S.L.ancla3d === "centro" ? { ...POSES3D.sentado } : POSES3D.agachado, S.L.ancla3d === "centro" ? [x, y, z] : [x, y - 4 * S.cel, z - 4 * S.cel], "cadera"); m._3d = null;
@@ -2111,8 +2157,15 @@ export class Casita {
   _enlazar() {
     let g = null;
     const m = this.mundo;
+    // (Fase 77) Un menú abierto se cierra al tocar cualquier otra cosa (botones del HUD incluidos): nunca se queda
+    // detrás de una hojita. El botón «Más» lo abre y lo cierra.
+    this.raiz.addEventListener("pointerdown", (e) => { if (this.menu && !e.target.closest?.(".ca-menu") && !this.masB?.contains(e.target)) this.cerrarMenu(); }, true);
     m.addEventListener("pointerdown", (e) => {
       if (e.button > 0) return;
+      // (Fase 77) Un segundo dedo no empieza otro gesto encima del primero (antes lo reemplazaba y lo que ibas
+      // arrastrando o cargando se quedaba levantado para siempre): si ya llevas algo, se ignora; si no, es un pellizco.
+      if (g && g.id !== e.pointerId) { if (!g.arrastra && !g.cargando) { clearTimeout(g.tl); g.espera = false; g.deslizo = true; } return; }
+      if (g) this._cancelarGesto();   // (un gesto viejo sin soltar —el mouse se soltó fuera de la ventana—)
       this.cerrarMenu();
       const t = e.target, mono = t.closest(".ca-monito"), on = t.closest(".ca-obj");
       const p = this._xy(e);
@@ -2137,8 +2190,18 @@ export class Casita {
         } else if (g.obj) { try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
       } else if (g.mono === this.yo) { try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
     });
+    // (Fase 77) Si empieza un pellizco (dos dedos), el gesto del primer dedo se cancela: lo que iba arrastrando regresa a
+    // su lugar y tu monito se queda donde estaba (antes el primer dedo seguía arrastrando o cargando mientras hacías zoom).
+    this._cancelarGesto = () => {
+      const G = g; if (!G) return;
+      g = null; clearTimeout(G.tl); this._levantando = false;
+      if (G.arrastra && G.obj) this._cancelarArrastre(G);
+      if (G.cargando) { const mo = this.yo; mo.n.classList.remove("cargado"); mo.n.style.transitionDuration = "0s"; this._ponerMono(mo); }
+      cancelAnimationFrame(this._rqAuto);
+    };
     m.addEventListener("pointermove", (e) => {
       if (!g || e.pointerId !== g.id) return;
+      if (this._pellizcando) { if (g.arrastra || g.cargando) this._cancelarGesto(); else g.deslizo = true; return; }
       g.mov = Math.max(g.mov, Math.hypot(e.clientX - g.x0, e.clientY - g.y0));
       if (g.espera) { if (g.mov > 9) { clearTimeout(g.tl); g.espera = false; g.obj = null; g.deslizo = true; } return; }
       if (g.mov < 7) return;
@@ -2189,8 +2252,10 @@ export class Casita {
       this.yo.orden++;
       this._mandarYo({ accion: "", mueble: "" });
     };
-    m.addEventListener("pointerup", (e) => fin(e));
-    m.addEventListener("pointercancel", (e) => fin(e, true));
+    // (Fase 77) En toda la casita (no sólo en el mundo): si el dedo o el mouse se suelta encima de un botón, el gesto
+    // también termina (antes se quedaba a medias).
+    this.raiz.addEventListener("pointerup", (e) => fin(e));
+    this.raiz.addEventListener("pointercancel", (e) => fin(e, true));
     m.addEventListener("contextmenu", (e) => e.preventDefault());
     // (Fase 60) Mientras tu dedo está en la pantalla: la cámara no te pelea y tu monito voltea a verlo.
     const v = this.vistaN;
@@ -2639,6 +2704,16 @@ export class Casita {
       if (x - d.w / 2 >= x0 && x + d.w / 2 <= x1 && y - d.h >= FONDO - 10 && y <= fr) return { x, y, f };
     }
     return null;
+  }
+  /** (Fase 77) Un arrastre que se cancela (empezó un pellizco): todo regresa a como estaba, sin guardar nada. */
+  _cancelarArrastre(g) {
+    const r = g.obj;
+    this.arrastrandoId = null;
+    this.raiz.classList.remove("arrastrando");
+    this.basuraN.classList.remove("ver", "encima");
+    for (const n of [r.n, r.fr]) { if (!n) continue; n.classList.remove("levantado", "a-la-basura", "posado", "no-cabe"); n.style.removeProperty("--incl"); }
+    if (r.glow) r.glow.hidden = false;
+    this._colocar(r);
   }
   _soltarObj(g) {
     const r = g.obj;

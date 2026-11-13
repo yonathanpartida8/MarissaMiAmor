@@ -65,6 +65,7 @@ export class Luces {
   pintar() {
     const j = this.j;
     if (!j.cuartosN) return;
+    j.capa?.ya?.();   // (Fase 77: la capa de luz, si estaba dormida, se despierta en el siguiente cuadro, no en su ratito)
     for (const c of CUARTOS) {
       const cv = this.mapas.get(c.k);
       if (!cv) continue;

@@ -39,8 +39,8 @@ export function fuerzaViento(t, clima = "sol") {
 export class Viento {
   constructor(j) { this.j = j; this.f = 0; this.raf = 0; this._ultimo = 0; this._n = 0; this._hojaT = 0; this.activo = false; }
   prender() {
-    cancelAnimationFrame(this.raf);
-    const paso = (ms) => { this.raf = requestAnimationFrame(paso); this._cuadro(ms); };
+    if (this.raf) return;   // (Fase 77: ya anda)
+    const paso = (ms) => { this.raf = 0; if (!this._cuadro(ms)) return; this.raf = requestAnimationFrame(paso); };
     this.raf = requestAnimationFrame(paso);
   }
   apagar() { cancelAnimationFrame(this.raf); this.raf = 0; this._quieto(); }
@@ -52,12 +52,16 @@ export class Viento {
     for (const { n } of this.j.patio?.esc.values() || []) { for (const x of n.children) x.style.transform = ""; n.classList.remove("tapa"); }
     for (const r of this.j.objs?.values() || []) { const c = r._copa; if (c) c.style.transform = ""; }
   }
+  /** Un cuadro. Regresa false cuando ya no hay que seguir (adentro, con la pestaña escondida o sin movimiento): el bucle
+   *  se detiene y se vuelve a prender al salir al patio (Fase 77: antes daba vueltas siempre, también adentro). */
   _cuadro(ms) {
     const j = this.j;
-    if (ms - this._ultimo < 32 || document.hidden || !j.vivo || !j.raiz) return;
+    if (!j.vivo || !j.raiz) return false;
+    if (ms - this._ultimo < 32) return true;
+    if (document.hidden) return false;
     this._ultimo = ms;
     const c = j.vistaCuarto, cu = c && cuarto(c);
-    if (!cu?.afuera || sinMov() || nivel(j.gfx) < 1) { this._quieto(); this.f = 0; return; }
+    if (!cu?.afuera || sinMov() || nivel(j.gfx) < 1) { this._quieto(); this.f = 0; return false; }
     if (!this.activo) { this.activo = true; j.raiz.classList.add("viento-js"); }
     const t = Date.now() / 1000, clima = j.climaActual?.() || "sol", f = (this.f = fuerzaViento(t, clima)), cuadro = ++this._n;
     // (Fase 68) El vaivén lleva su propia fase, que avanza poquito a poquito (más rápido con más viento). Antes se
@@ -107,5 +111,6 @@ export class Viento {
     }
     // El agua (más despacito: ~12 cuadros por segundo).
     if (cu.mapa && cuadro % 3 === 0) j.patio?.agua?.cuadro(t, f);
+    return true;
   }
 }

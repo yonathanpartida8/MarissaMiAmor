@@ -134,10 +134,14 @@ export function crearCapaGL(j, nv = 4) {
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; gl.viewport(0, 0, W, H); }
     return [W, H];
   }
+  // (Fase 77) Cuando nada cambia (de día, sin lluvia, mismas luces), la capa se duerme y se asoma cada ratito en vez de
+  // despertar 60 veces por segundo; en cuanto algo se mueve (deslizar, zoom, noche, lluvia) vuelve a cuadro por cuadro.
+  let quietos = 0, tq = 0;
   function cuadro(ahora) {
     rq = 0;
     if (perdido || !j.vivo || document.hidden) return;
-    rq = requestAnimationFrame(cuadro);
+    if (quietos > 12 && !urgente) { tq = setTimeout(() => { tq = 0; if (!rq) rq = requestAnimationFrame(cuadro); }, 180); }
+    else rq = requestAnimationFrame(cuadro);
     if (j._pellizcando) return;   // (Fase 76: mientras pellizcas, la capa se escala igual que la casita)
     // 30 cuadros por segundo como mucho (15 en los modos ligeros)… salvo cuando la cámara se mueve o haces zoom: ahí
     // la luz se acomoda en el mismo cuadro, para que no se quede atrás (se veía temblar y parpadear). (Fase 76)
@@ -159,7 +163,8 @@ export function crearCapaGL(j, nv = 4) {
     // Si nada se mueve (sin lluvia, relámpago ni luciérnagas) y las luces siguen igual, no se vuelve a dibujar.
     const anima = efectos && e.afuera && e.noche > 0.5 && e.lluvia < 0.1 || e.flash > 0;
     const firma = anima ? "" : `${W}x${H}|${e.oscuro}|${n}|${luces.subarray(0, n * 4).join(",")}`;
-    if (firma && firma === ultFirma) return;
+    if (firma && firma === ultFirma) { quietos++; return; }
+    quietos = 0;
     ultFirma = firma;
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.res, W, H);
@@ -174,11 +179,11 @@ export function crearCapaGL(j, nv = 4) {
   }
   return {
     n: cv,
-    prender() { if (!rq && !perdido) { ult = 0; ultFirma = ""; rq = requestAnimationFrame(cuadro); } },
-    parar() { cancelAnimationFrame(rq); rq = 0; },
+    prender() { if (!rq && !tq && !perdido) { ult = 0; ultFirma = ""; quietos = 0; rq = requestAnimationFrame(cuadro); } },
+    parar() { cancelAnimationFrame(rq); rq = 0; clearTimeout(tq); tq = 0; },
     /** (Fase 76) La cámara se movió: en el siguiente cuadro se acomoda la luz, sin esperar su turno. */
-    ya() { urgente = true; if (!rq && !perdido && j.vivo) rq = requestAnimationFrame(cuadro); },
+    ya() { urgente = true; quietos = 0; clearTimeout(tq); tq = 0; if (!rq && !perdido && j.vivo) rq = requestAnimationFrame(cuadro); },
     ajustar(k) { ajustar(k); this.nv = k; },
-    destruir() { muerto = true; cancelAnimationFrame(rq); rq = 0; try { gl.deleteProgram(pr); gl.deleteBuffer(buf); gl.getExtension("WEBGL_lose_context")?.loseContext(); } catch (e) { /* nada */ } cv.remove(); },
+    destruir() { muerto = true; cancelAnimationFrame(rq); rq = 0; clearTimeout(tq); tq = 0; try { gl.deleteProgram(pr); gl.deleteBuffer(buf); gl.getExtension("WEBGL_lose_context")?.loseContext(); } catch (e) { /* nada */ } cv.remove(); },
   };
 }

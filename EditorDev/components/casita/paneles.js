@@ -14,7 +14,7 @@ import { PERFILES } from "./graficos.js";
 
 /** Una hojita que sube desde abajo (se cierra con la ✕, jalando su pestañita o con Atrás). */
 export function hoja(j, titulo, cuerpo, clase = "") {
-  j.cerrarHoja();
+  j.cerrarMenu?.(); j.cerrarHoja();
   const cerrar = () => j.cerrarHoja();
   const h = el("section.ca-hoja" + (clase ? "." + clase : ""), { role: "dialog", "aria-label": titulo }, [
     el("i.ca-hoja-asa"),
