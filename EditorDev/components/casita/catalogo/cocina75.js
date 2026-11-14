@@ -37,7 +37,7 @@ function vivoDe(svg, quitar = []) {
   } catch (e) { return ""; }
 }
 /** Un mueble pixel con su parte viva (dibujo de antes) encima, recorrida si cambió tantito la medida. */
-function conVivo(def, viejo, quitar = [], dx = 0, dy = 0) {
+export function conVivo(def, viejo, quitar = [], dx = 0, dy = 0) {
   const p = pix(def), base = p.arte;
   p.arte = (e, C) => {
     const v = viejo ? vivoDe(viejo(e, C), quitar) : "", extra = def.vivo ? def.vivo(e, C) : "";

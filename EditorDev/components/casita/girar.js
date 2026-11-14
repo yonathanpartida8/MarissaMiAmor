@@ -25,7 +25,7 @@ const PX = 4, ELEV = 0.36, CACHE = new Map(), PEND = new Map(), PODADO = new Map
  * (IndexedDB). La siguiente vez que abres el juego (y las miniaturas de «Acomodar») salen al instante, sin pasar por el
  * dibujo liso ni aparecer de a poquito. Si cambia la forma de dibujar, cambia VER_VISTAS y se hacen de nuevo.
  */
-const VER_VISTAS = "75b", BD_VISTAS = "casita-vistas";
+const VER_VISTAS = "78", BD_VISTAS = "casita-vistas";
 let BD = null;
 const abrirBD = () => new Promise((ok) => {
   try {
@@ -224,7 +224,7 @@ export function vistaGirada(d, e, C, g) {
   // (Fase 70) Lo que tiene una parte de enfrente aparte (la tina, la cama: lo que tapa al monito) se gira completo:
   // girado, esa parte se esconde, así que va dentro del volumen (y el monito queda adentro con su hondura).
   let partes = partes0;
-  if (d.frente) { const pf = separar(d.frente(e || {}, C)); partes = { ...partes0, quieto: partes0.quieto.replace(/<\/svg>\s*$/, pf.quieto.replace(/^<svg[^>]*>/, "")) }; }
+  if (d.frente) partes = { ...partes0, quieto: conFrente(partes0.quieto, d.frente(e || {}, C)) };
   const clave = `${d.k}|${huella(partes.quieto)}|${g}|74`;
   if (CACHE.has(clave)) return Promise.resolve({ ...CACHE.get(clave), vivo: partes.vivo });
   if (PEND.has(clave)) return PEND.get(clave).then((r) => r && { ...r, vivo: partes.vivo });
@@ -245,7 +245,7 @@ export function vistaGirada(d, e, C, g) {
       const V = d.vistas || null;
       // (Fase 74) La tapa dibujada a mano (las hornillas, la tarja, la madera de la cubierta…): una letra de la paleta por
       // cuadrito de arriba (u de izquierda a derecha, z de enfrente a atrás, v el renglón de esa tapa).
-      const palT = d.tapa ? { ...PAL, ...(C ? rampa(C) : {}), ...(d.palTapa || {}) } : null, memoT = new Map();
+      const palT = d.tapa ? { ...PAL, ...(C ? rampa(C) : {}), ...(typeof d.palTapa === "function" ? d.palTapa(C || "#ff9cbf") : d.palTapa || {}) } : null, memoT = new Map();
       const colT = (ch) => { if (!ch) return null; if (memoT.has(ch)) return memoT.get(ch); const t = String(palT[ch] || ""), m = /^#?([0-9a-f]{6})$/i.exec(t), n = m ? parseInt(m[1], 16) : -1, c = n < 0 ? null : [n >> 16, (n >> 8) & 255, n & 255]; memoT.set(ch, c); return c; };
       const D = V?.D || Math.max(2, Math.round(hondura(d) / PX));
       let colV = null, ladoDe = null;
@@ -396,7 +396,8 @@ export function vistaGirada(d, e, C, g) {
               if (plano) {
                 const tt = palT ? colT(d.tapa(u, z, W, D, v)) : null;
                 if (tt) c = mezcla(tt, 1.02 - 0.05 * Math.min(1, z / Math.max(1, D - 1)));
-                else { const deb = v + 1 < H && op[(v + 1) * W + u] ? cel(u, v + 1) : null, lb = (x) => x[0] * 0.3 + x[1] * 0.59 + x[2] * 0.11; c = mezcla(deb && lb(base) < lb(deb) * 0.8 ? deb : base, 1.13 - 0.07 * Math.min(1, z / Math.max(1, D - 1))); }
+                // (Fase 78) Un escalón más clara que antes: la tapa se leía del mismo color que el frente y el mueble se veía plano.
+                else { const deb = v + 1 < H && op[(v + 1) * W + u] ? cel(u, v + 1) : null, lb = (x) => x[0] * 0.3 + x[1] * 0.59 + x[2] * 0.11; c = mezcla(deb && lb(base) < lb(deb) * 0.8 ? deb : base, 1.19 - 0.08 * Math.min(1, z / Math.max(1, D - 1))); }
               }
               else { const izqda = tl > v; f = izqda ? 3 : 4; c = (izqda ? izq[v] : der[v]) || base; k = izqda ? L.l : L.r; }
             }
@@ -426,7 +427,7 @@ export function vistaGirada(d, e, C, g) {
         const q = j * OW + i, f = cara[q];
         if (f !== 5) continue;
         const ab = j + 1 < OH ? cara[q + OW] : 0, ar = j > 0 ? cara[q - OW] : 0;
-        if (ab && ab !== 5 && Math.abs(zb[q + OW] - zb[q]) < 2.2) tinta(q, 1.1);
+        if (ab && ab !== 5 && Math.abs(zb[q + OW] - zb[q]) < 2.2) tinta(q, 1.15);
         else if (ar && ar !== 5 && zb[q - OW] > zb[q] + 0.6) tinta(q, 0.86);
       }
       {
@@ -459,6 +460,18 @@ export function vistaGirada(d, e, C, g) {
           if (orilla && (i + j) % 2) continue;
           o2[k2] = 70; o2[k2 + 1] = 34; o2[k2 + 2] = 60; o2[k2 + 3] = orilla ? 40 : centro ? 92 : 70;
         }
+        // (Fase 78) La sombra de contacto: justo debajo de donde el mueble toca el piso, dos renglones más oscuros (el de
+        // arriba más): así se ve apoyado de verdad y no flotando sobre su sombrita.
+        for (let i = 0; i < OW; i++) {
+          let fondo = -1;
+          for (let j = OH - 1; j >= 0; j--) if (cara[j * OW + i]) { fondo = j; break; }
+          if (fondo < 0) continue;
+          for (let dj = 1; dj <= 2; dj++) {
+            const jj = fondo + dj + 1; if (jj >= OH2) break;
+            const k2 = (jj * OW2 + i + 1) * 4; if (o2[k2 + 3] === 255) continue;
+            o2[k2] = 60; o2[k2 + 1] = 28; o2[k2 + 2] = 52; o2[k2 + 3] = Math.max(o2[k2 + 3], dj === 1 ? 126 : 92);
+          }
+        }
       }
       const oc = document.createElement("canvas"); oc.width = OW2; oc.height = OH2;
       oc.getContext("2d").putImageData(new ImageData(o2, OW2, OH2), 0, 0);
@@ -489,7 +502,7 @@ export function vistaGirada(d, e, C, g) {
       CACHE.set(clave, r);
       if (CACHE.size > 900) CACHE.delete(CACHE.keys().next().value);
       return r;
-    } catch (er) { return null; } finally { PEND.delete(clave); }
+    } catch (er) { try { console.debug("DBG vista girada", d.k, g, er?.message); } catch (e2) { /* nada */ } return null; } finally { PEND.delete(clave); }
   })();
   PEND.set(clave, pr);
   return pr.then((r) => r && { ...r, vivo: partes.vivo });
@@ -516,7 +529,14 @@ const esperarPausa = async () => { let n = 0; while (performance.now() < pausaHa
  * como estaba.
  */
 export const con34 = (d) => d.capa === "piso" && !d.mascota && !d.noGira && !d.ya34 && d.k !== "cosita" && !soloFrenteAtras(d);
-const claveFrente = (d, e, C) => { const partes0 = separar(d.arte(e || {}, C)); let q = partes0.quieto; if (d.frente) q = q.replace(/<\/svg>\s*$/, separar(d.frente(e || {}, C)).quieto.replace(/^<svg[^>]*>/, "")); return `${d.k}|${huella(q)}|0|74`; };
+const claveFrente = (d, e, C) => { const partes0 = separar(d.arte(e || {}, C)); let q = partes0.quieto; if (d.frente) q = conFrente(q, d.frente(e || {}, C)); return `${d.k}|${huella(q)}|0|74`; };
+/** Lo quieto del «frente» (lo que tapa al monito) metido en el dibujo quieto. (Fase 78: si el frente es todo vivo
+ *  —la cobija de la cama— queda vacío y se serializa como <svg/>: entonces no se mete nada, en vez de romper el dibujo.) */
+function conFrente(quieto, frente) {
+  const pf = separar(frente).quieto;
+  if (!pf || /^<svg[^>]*\/>\s*$/.test(pf)) return quieto;
+  return quieto.replace(/<\/svg>\s*$/, pf.replace(/^<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "") + "</svg>");
+}
 export function vista34Ya(d, e, C) { try { const v = CACHE.get(claveFrente(d, e, C)); return v && !v.plano ? v : null; } catch (er) { return null; } }
 export function vista34(d, e, C) {
   let k; try { k = claveFrente(d, e, C); } catch (er) { return Promise.resolve(null); }

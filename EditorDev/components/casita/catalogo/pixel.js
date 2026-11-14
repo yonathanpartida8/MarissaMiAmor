@@ -55,7 +55,7 @@ export const E2 = (filas) => filas.map((s) => s + [...s].reverse().join(""));
 export const X = (fila, n) => Array(n).fill(fila);
 
 /** De filas de letras a rectangulitos (juntando los de la misma fila y color). */
-function rects(filas, pal, ox = 0, oy = 0) {
+export function rects(filas, pal, ox = 0, oy = 0) {
   let s = "";
   filas.forEach((f, y) => {
     for (let x = 0; x < f.length;) {
@@ -84,7 +84,8 @@ export function pix(def) {
   return {
     ...resto, w: W * PXL, h: H * PXL, pixel: true, _filas: filas,
     arte: (e, C) => {
-      const pal = { ...PAL, ...(C ? rampa(C) : {}), ...(palPropia || {}) };
+      // (Fase 78) La paleta propia puede depender del color elegido (tonos del color: la cabecera más oscura, la sábana…).
+      const pal = { ...PAL, ...(C ? rampa(C) : {}), ...(typeof palPropia === "function" ? palPropia(C || "#ff9cbf") : palPropia || {}) };
       const extra = typeof def.extra === "function" ? def.extra(e || {}, C) : [];
       return `<svg viewBox="0 0 ${W * PXL} ${H * PXL}" aria-hidden="true" shape-rendering="crispEdges">${rects(filas, pal)}${[...capas, ...extra].map((c) => capa(c, pal)).join("")}</svg>`;
     },

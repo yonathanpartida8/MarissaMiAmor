@@ -115,40 +115,8 @@ export const VISTAS = {
       return v <= 1 || u <= 3 || u >= 12 ? ")" : "[";
     },
   },
-  // ── La cama: de un lado su cabecera acolchada con botoncitos; del otro, almohadas, sábana y la cobija que cae. ──
-  cama: {
-    D: 20,
-    pal: (C) => ({ "<": tono(C, 0.85), ">": tono(C, 0.62) }),
-    lado(v, z, u) {
-      if (v >= 29) return z === 1 || z === 2 || z === 17 || z === 18 ? (v >= 31 ? "b" : "c") : null;
-      if (v === 0) return null;
-      if ((v === 1 && (z < 5 || z > 14)) || (v === 2 && (z < 3 || z > 16)) || (v === 3 && (z < 1 || z > 18))) return null;
-      if (u < 10) {
-        if (v <= 3) return "[";
-        if (v === 28) return ">";
-        return v % 4 === 2 && z % 4 === 2 ? ">" : "<";
-      }
-      if (v <= 14) return z === 0 || z === 19 ? "k" : "#";
-      if (v === 15) return "k";
-      if (v === 16) return "]";
-      if (v === 28) return ")";
-      return v % 5 === 1 && z % 5 === 2 ? "{" : "[";
-    },
-  },
-  // ── La tina: de lado se ve su panza redonda, el borde, la llave al fondo y sus patitas. ──
-  tina: {
-    D: 19,
-    lado(v, z, u) {
-      if (v <= 8) return u >= 46 && z >= 9 && z <= 10 ? "F" : null;
-      if (v >= 27) return z === 3 || z === 4 || z === 14 || z === 15 ? (v === 27 ? "e" : "d") : null;
-      const a = v <= 22 ? 0 : v <= 24 ? 1 : v === 25 ? 2 : 3;
-      if (z < a || z > 18 - a) return null;
-      if (v <= 10) return "]";
-      if (v <= 12) return "[";
-      return v >= 24 || z <= a || z >= 18 - a ? "j" : "[";
-    },
-    atras(u, v) { if (v <= 8 || v >= 27) return null; return v <= 10 ? "]" : v >= 25 ? "j" : "["; },
-  },
+  // (Fase 78) La cama, la tina, el piano y el escritorio ya vienen dibujados con su tapa (catalogo/muebles78.js): su
+  // costado y su espalda salen de su propio volumen, así que ya no traen vista a mano.
   // ── El inodoro: el tanque atrás, la tapa, la taza que sale para adelante y su pie. ──
   inodoro: {
     D: 10,
@@ -173,47 +141,6 @@ export const VISTAS = {
       if (v <= 17) { const a = Math.max(0, v - 12); if (z < a || z > (v >= 17 ? 11 : 12)) return null; return v >= 15 ? "k" : "#"; }
       if (v <= 30) return z >= 6 && z <= 10 ? (z === 6 ? "k" : "#") : null;
       return z >= 5 && z <= 11 ? "j" : null;
-    },
-  },
-  // ── El piano vertical: el cuerpo alto atrás, el teclado que sale adelante, el atril, sus patas y los pedales. ──
-  piano: {
-    D: 20,
-    lado(v, z, u) {
-      if (v <= 3) return z >= 9 && z <= 10 ? "C" : null;
-      if (v <= 14) return z >= 8 ? (v === 4 ? "]" : z === 19 ? ")" : "[") : null;
-      if (v <= 21) { if (z >= 8) return z === 19 ? ")" : "["; return v <= 16 ? ")" : v <= 19 ? "C" : ")"; }
-      if (v <= 28) return z >= 8 ? (v === 28 || z === 19 ? ")" : "[") : null;
-      if (u >= 15 && u <= 23) return v >= 33 && z >= 1 && z <= 4 ? "n" : null;
-      if (z >= 1 && z <= 2) return v === 36 ? ")" : "[";
-      return z >= 12 ? (v === 36 ? ")" : "[") : null;
-    },
-    atras(u, v) {
-      if (v <= 3 || v >= 29) return null;
-      return u <= 1 || u >= 37 || v === 4 || v === 28 || u === 12 || u === 26 ? ")" : "[";
-    },
-  },
-  // ── El escritorio: la cubierta, el cajonero de lado, la pata con su travesaño, la lámpara y la pantalla atrás. ──
-  escritorio: {
-    D: 18,
-    lado(v, z, u) {
-      if (v <= 9) {
-        if (u <= 9) {
-          if (v <= 5) return z >= 11 && z <= 14 ? (v <= 2 ? "J" : "H") : null;
-          if (v <= 8) return z >= 12 && z <= 13 ? "h" : null;
-          return z >= 11 && z <= 14 ? "h" : null;
-        }
-        if (v <= 7) return z >= 13 && z <= 14 ? (z === 14 ? "i" : "j") : null;
-        return z >= 12 && z <= 15 ? "i" : null;
-      }
-      if (v <= 12) return v === 10 ? "e" : v === 12 ? "c" : "d";
-      if (u <= 15) { if (z < 1 || z > 16) return null; return v === 27 || z === 1 || z === 16 || v === 13 ? "c" : "e"; }
-      if (z === 1 || z === 2 || z === 15 || z === 16) return "d";
-      return v === 25 && z > 2 && z < 15 ? "c" : null;
-    },
-    atras(u, v) {
-      if (v <= 9 || v >= 28) return null;
-      if (v <= 12) return v === 12 ? "c" : "d";
-      return u <= 15 ? (u === 2 || u === 14 || v === 27 ? "c" : "e") : null;
     },
   },
 };

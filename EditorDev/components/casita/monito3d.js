@@ -309,7 +309,10 @@ export function lugarEn(M, d, l, jx, vg, cel) {
     altos.sort((a, b) => a - b);
     const colchon = altos.length ? altos[Math.floor(altos.length * 0.65)] * PX : d.h + (l.dy || 0) - 81;
     // Acostado de ladito, lo que mide de grueso para arriba es lo ancho del cuerpo: se hunde tantito en el colchón.
-    return { ancla: [xc, colchon - (M.medio - 2.4) * cel, dz], ancla3d: "centro", yaw: 0, pose: { ...POSES.acostado, rodar: cabeza < 0 ? -90 : 90 }, cabeza };
+    // (Fase 78) La imagen del monito se sube media hondura del mueble al ponerla (index.js, para lo sentado): acostado
+    // eso lo dejaba flotando sobre el colchón; aquí se compensa, así queda de verdad sobre la sábana.
+    const subida = vg ? (D * PX * E) / 2 : 0;
+    return { ancla: [xc, colchon - (M.medio - 3.8) * cel + subida, dz], ancla3d: "centro", yaw: 0, pose: { ...POSES.acostado, rodar: cabeza < 0 ? -90 : 90 }, cabeza };
   }
   const yaw = l.mira ? (l.mira > 0 ? 90 : -90) : 0;
   // En la tina: sentado con las piernas estiradas al frente (adentro del agua) y los brazos en la orilla.
