@@ -40,7 +40,10 @@ export class LluviaFisica {
     this.rq = 0;
     const j = this.j;
     if (!j.vivo || document.hidden) return this._limpiar();
-    const gfx = j.gfx, cl = j.climaActual(), llueve = cl !== "sol" && GOTAS[gfx];
+    // (Fase 79) Adentro de la casa no caen gotas (Fase 66): el lienzo ya no se borra y se vuelve a subir 30 veces por
+    // segundo para no dibujar nada (era una capa del tamaño de la pantalla repintándose sin parar). Se prende otra vez
+    // al salir al jardín o a la terraza (index.js, _mostrarCuarto).
+    const gfx = j.gfx, cl = j.climaActual(), afuera = !!cuarto(j.vistaCuarto || "sala")?.afuera, llueve = cl !== "sol" && GOTAS[gfx] && afuera;
     if (!llueve && !this.salpicas.length && !this.ondas.length) return this._limpiar();
     this.rq = requestAnimationFrame((x) => this._cuadro(x));
     const paso = 1000 / (FPS[gfx] || 30) - 2;

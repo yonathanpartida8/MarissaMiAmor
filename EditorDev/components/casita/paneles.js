@@ -243,9 +243,9 @@ export function cajonCatalogo(j) {
         quitar(); b._arrastro = true; b.classList.remove("presionada");
         const grande = n.classList.contains("grande");
         try { navigator.vibrate?.(14); } catch (er) { /* nada */ }
-        j.arrastrarNuevo(d.k, ult);
-        // (Grande, al soltarla se hace chiquito para que veas dónde quedó.)
-        if (grande) addEventListener("pointerup", function f(ev) { if (ev.pointerId !== id) return; removeEventListener("pointerup", f); agrandar(false); });
+        // (Grande, al soltarla se hace chiquito para que veas dónde quedó.) (Fase 79: lo avisa la casita al soltar,
+        // también si el teléfono canceló el dedo y se siguió con el toque.)
+        j.arrastrarNuevo(d.k, ult, grande ? () => agrandar(false) : null);
       };
       const mover = (ev) => {
         if (ev.pointerId !== id) return;

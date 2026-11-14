@@ -119,6 +119,10 @@ export class Casita {
   /* ═════════════ Armar ═════════════ */
   montar(cont) {
     this.vivo = true;
+    // (Fase 79) Mientras juegas, lo que queda atrás de la casita (el mapa de «Nuestros días», el menú principal, el
+    // editor) no se pinta: antes seguía vivo detrás (36 cuadros del mapa y sus animaciones) y en el teléfono se acababa
+    // la memoria de video; entonces se dejaban de pintar pedazos de la casita (cosas y monitos que desaparecían).
+    document.documentElement.classList.add("ca-abierta");
     // Aquí suenan los sonidos de la casita, pero no la canción del editor (vuelve sola al salir).
     this.app.audio?.pausarParaVista?.(true, "casita");
     this.app.audio?.mantenerDespierto?.("casita", true);
@@ -214,6 +218,7 @@ export class Casita {
   }
 
   limpiar() {
+    document.documentElement.classList.remove("ca-abierta");   // (Fase 79: lo de atrás vuelve a pintarse)
     this.suciedad?.limpiarTodo();
     this.viento?.apagar();
     clearInterval(this._tReco); this.recolectar?.limpiar(); this.vida?.apagar(); this.fisica?.apagar(); this.cocina?.limpiar();
@@ -361,7 +366,10 @@ export class Casita {
       const o = el("i.ca-oscuro." + c.k, { style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
       this.oscuroN.set(c.k, o);
       // (Fase 60) La luz ambiental de cada cuarto (cálida en la cocina, lila en la recámara, fresca en el baño…).
-      this.mundo.append(el("i.ca-ambiente." + c.k, { "aria-hidden": "true", style: { left: inicioDe(c.k) + "px", width: c.w + "px" } }));
+      // (Fase 79: se guardan para no pintarlas en los cuartos que no se ven.)
+      n._amb = el("i.ca-ambiente." + c.k, { "aria-hidden": "true", style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
+      n._osc = o;
+      this.mundo.append(n._amb);
       this.mundo.append(o);
       if (c.afuera) {
         const ch = el("i.ca-charcos");
@@ -826,6 +834,9 @@ export class Casita {
     const luz = () => this.capa?.n;
     const empezar = (c) => {
       this._cancelarGesto?.();
+      // (Fase 79) La capa propia del lienzo sólo mientras pellizcas: si se queda siempre, el teléfono guarda todo lo
+      // dibujado al tamaño más grande al que llegó (al acercar) y al alejar o al entrar a Acomodar se acaba la memoria.
+      L.classList.add("pellizco");
       const R = L.getBoundingClientRect();
       L.style.transformOrigin = `${(c[0] - R.left).toFixed(0)}px ${(c[1] - R.top).toFixed(0)}px`;
       L.style.transition = "none"; this._pellizcando = true; cancelAnimationFrame(this._rqCam); this._rqCam = 0;
@@ -835,7 +846,7 @@ export class Casita {
     const soltar = () => {
       const g = luz();
       for (const n of [L, g]) if (n) { n.style.transition = "transform .48s cubic-bezier(.22, .9, .3, 1.12)"; n.style.transform = ""; }
-      clearTimeout(this._tPel); this._tPel = setTimeout(() => { this._pellizcando = false; for (const n of [L, luz()]) if (n) { n.style.transition = ""; n.style.transformOrigin = ""; } this.capa?.ya?.(); }, 500);
+      clearTimeout(this._tPel); this._tPel = setTimeout(() => { this._pellizcando = false; L.classList.remove("pellizco"); for (const n of [L, luz()]) if (n) { n.style.transition = ""; n.style.transformOrigin = ""; } this.capa?.ya?.(); }, 500);
     };
     v.addEventListener("touchstart", (e) => { if (e.touches.length === 2 && !this.arrastrandoId && !this.yo.n.classList.contains("cargado")) { p0 = { d: dist(e.touches) || 1, c: centro(e.touches) }; empezar(p0.c); } }, { passive: true });
     v.addEventListener("touchmove", (e) => {
@@ -982,6 +993,7 @@ export class Casita {
     else v.scrollTop = 0;
     if (cambio) { this._camLibre = false; this._pintado = false; this.puertasN.pintar(); this.suciedad?.pintar(); try { this.luces?.pintar(); } catch (e) { /* nada */ } }
     if (cu.afuera) this.viento?.prender();   // (Fase 77: afuera se prende; adentro se apaga solo)
+    if (cu.afuera && this.raiz.classList.contains("lluvia-cv")) this.lluviaF?.prender();   // (Fase 79: igual la lluvia)
     this._alDeslizar();
   }
   /** Lo que dice el HUD de tu amorcito (Fase 63: en qué cuarto anda, si no está contigo). */
@@ -1012,7 +1024,8 @@ export class Casita {
     // (Lo que se ve, más casi un cuarto de cada lado: así nunca se nota al deslizar.)
     // (Fase 63: sólo el cuarto que se ve.)
     const cerca = new Set([this.vistaCuarto]);
-    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); n?._muro?.classList.toggle("lejos", !cerca.has(c.k)); n?._techo?.classList.toggle("lejos", !cerca.has(c.k)); }
+    // (Fase 79) Los cuartos que no se ven ya no se pintan (antes sólo se pausaban: seguían ocupando memoria de video).
+    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k), lejos = !cerca.has(c.k); for (const x of [n, n?._muro, n?._techo, n?._amb, n?._osc]) x?.classList.toggle("lejos", lejos); }
     this.patio?.lejos(!cerca.has("jardin"));
     for (const { n } of this.recolectar?.nodos.values() || []) n.classList.toggle("lejos", !cerca.has("jardin"));
     this._pintarCanasta?.();
@@ -2157,6 +2170,13 @@ export class Casita {
   _enlazar() {
     let g = null;
     const m = this.mundo;
+    // (Fase 79) EL DEDO ES TUYO MIENTRAS ARRASTRAS: en el teléfono, si el dedo se movía tantito de lado, el navegador
+    // creía que querías deslizar (la vista o la tira de cositas del cajón), cancelaba el arrastre y la cosa se quedaba
+    // «puesta donde sea». Este escucha está desde que se abre la casita (si se pusiera al empezar a arrastrar, el
+    // teléfono ya no lo dejaría cancelar nada) y sólo frena el deslizar cuando de verdad llevas algo.
+    this.raiz.addEventListener("touchmove", (e) => {
+      if (e.cancelable && (this.arrastrandoId || this._levantando || this._agarrando || this._llevaNuevo || this.yo?.n.classList.contains("cargado"))) e.preventDefault();
+    }, { passive: false });
     // (Fase 77) Un menú abierto se cierra al tocar cualquier otra cosa (botones del HUD incluidos): nunca se queda
     // detrás de una hojita. El botón «Más» lo abre y lo cierra.
     this.raiz.addEventListener("pointerdown", (e) => { if (this.menu && !e.target.closest?.(".ca-menu") && !this.masB?.contains(e.target)) this.cerrarMenu(); }, true);
@@ -2174,6 +2194,9 @@ export class Casita {
       g.jugando = !this.editando && !g.mono && !!g.obj?.d.portatil;
       // (Fase 64) Con el mouse, arrastrar el piso mueve la cámara (como deslizar con el dedo).
       if (e.pointerType === "mouse" && !this.editando && !g.mono && !g.obj) g.pan = { sl: this.vistaN.scrollLeft, st: this.vistaN.scrollTop };
+      // (Fase 79) Si este dedo va a arrastrar algo (lo elegido al acomodar, una cosa portátil jugando) o a cargar a tu
+      // monito, el navegador ya no puede usarlo para deslizar la vista (el escucha de touchmove al principio de _enlazar).
+      this._agarrando = !!(g.obj && (g.jugando || (this.editando && (e.pointerType === "mouse" || this.sel === g.obj)))) || (!this.editando && g.mono === this.yo);
       if (this.editando || g.jugando) {
         if (g.obj) g.off = { dx: (g.obj.v?.x ?? g.obj.gx) - p.X, dy: (g.obj.v?.y ?? g.obj.o.y) - p.y };   // (Fase 75: desde el pie que se ve)
         // (Fase 73) Acomodando con el dedo, lo que NO está elegido no se mueve al deslizar (deslizar mueve la vista):
@@ -2194,7 +2217,7 @@ export class Casita {
     // su lugar y tu monito se queda donde estaba (antes el primer dedo seguía arrastrando o cargando mientras hacías zoom).
     this._cancelarGesto = () => {
       const G = g; if (!G) return;
-      g = null; clearTimeout(G.tl); this._levantando = false;
+      g = null; clearTimeout(G.tl); this._levantando = false; this._agarrando = false;
       if (G.arrastra && G.obj) this._cancelarArrastre(G);
       if (G.cargando) { const mo = this.yo; mo.n.classList.remove("cargado"); mo.n.style.transitionDuration = "0s"; this._ponerMono(mo); }
       cancelAnimationFrame(this._rqAuto);
@@ -2212,7 +2235,16 @@ export class Casita {
     });
     const fin = (e, cancelado = false) => {
       if (!g || e.pointerId !== g.id) return;
-      const G = g; g = null; clearTimeout(G.tl); this._levantando = false;
+      const G = g; g = null; clearTimeout(G.tl); this._levantando = false; this._agarrando = false;
+      // (Fase 79) Si el navegador canceló el dedo a medio arrastre (en el teléfono pasa cuando cree que quieres deslizar),
+      // NO se suelta ahí donde iba: se sigue con el toque hasta que de verdad levantes el dedo.
+      if (cancelado && e.pointerType === "touch" && (G.arrastra || G.cargando)) {
+        const u = G.ultimo || e;
+        this._seguirToque(u.clientX, u.clientY,
+          (ev) => { if (G.arrastra) this._arrastrarObj(G, ev); else this._cargar(G, ev); },
+          (ev) => { cancelAnimationFrame(this._rqAuto); if (G.arrastra) this._soltarObj(G, ev); else this._soltarMono(G, ev); });
+        return;
+      }
       if (G.deslizo) return;
       cancelAnimationFrame(this._rqAuto);
       if (G.arrastra) { this._soltarObj(G, e); return; }
@@ -2385,8 +2417,11 @@ export class Casita {
     this.deshacerB.disabled = !this.pila.length;
     this._musicas();
     // La casita se aleja un poquito (o regresa) sin perder lo que estabas viendo.
+    // (Fase 79) De golpe, sin la animación de antes: mientras duraba, el teléfono tenía que volver a dibujar toda la
+    // casita dos veces (al empezar y al terminar) y en ese ratito se veían parpadeos y cosas que desaparecían.
     const centro = (this.vistaN.scrollLeft + this.vistaN.clientWidth / 2) / this.k;
-    if (!reducido()) { this.mundo.classList.add("ajusta"); clearTimeout(this._tAj); this._tAj = setTimeout(() => this.mundo.classList.remove("ajusta"), 420); }
+    // (Y acomodando los árboles no se mecen: menos que volver a dibujar mientras arrastras.)
+    if (on) this.viento?.apagar(); else if (cuarto(this.vistaCuarto || "sala").afuera) this.viento?.prender();
     this._medir();
     this.vistaN.scrollLeft = Math.max(0, centro * this.k - this.vistaN.clientWidth / 2);
     this.puertasN.pintar();   // (al acomodar se ven también los lugares de las puertas que quitaste, para volver a ponerlas)
@@ -2394,8 +2429,24 @@ export class Casita {
   /** Lo último que pusiste (para la pestaña «Recientes» del cajón). */
   recientes() { try { const v = JSON.parse(localStorage.getItem(RECIENTES) || "[]"); return Array.isArray(v) ? v.filter((k) => CATALOGO[k]).slice(0, 12) : []; } catch (e) { return []; } }
   _recordar(t) { try { localStorage.setItem(RECIENTES, JSON.stringify([t, ...this.recientes().filter((k) => k !== t)].slice(0, 12))); } catch (e) { /* nada */ } }
-  /** Arrastrar una cosa del cajón: aparece bajo tu dedo y la sueltas donde la quieras (o en la basura). */
-  arrastrarNuevo(t, ev) {
+  /** (Fase 79) Sigue un arrastre con los eventos de toque cuando el navegador ya canceló el puntero (pointercancel):
+   *  los toques siguen llegando hasta que levantas el dedo. Así lo que llevas nunca se queda «puesto donde sea». */
+  _seguirToque(x, y, mover, soltar) {
+    let id = null;
+    const busca = (l) => {
+      let t = null, d = 1e9;
+      for (const q of l) { if (id != null) { if (q.identifier === id) return q; continue; } const dd = Math.hypot(q.clientX - x, q.clientY - y); if (dd < d) { d = dd; t = q; } }
+      return t;
+    };
+    const como = () => ({ clientX: x, clientY: y, pointerId: -1, pointerType: "touch", preventDefault() {} });
+    const tm = (e) => { const t = busca(e.touches); if (!t) return; id = t.identifier; x = t.clientX; y = t.clientY; if (e.cancelable) e.preventDefault(); mover(como()); };
+    const te = (e) => { if (id != null && [...e.touches].some((q) => q.identifier === id)) return; quitar(); soltar(como()); };
+    const quitar = () => { removeEventListener("touchmove", tm); removeEventListener("touchend", te); removeEventListener("touchcancel", te); };
+    addEventListener("touchmove", tm, { passive: false }); addEventListener("touchend", te); addEventListener("touchcancel", te);
+  }
+  /** Arrastrar una cosa del cajón: aparece bajo tu dedo y la sueltas donde la quieras (o en la basura).
+   *  (Fase 79) `alSoltar`: lo que hace el cajón cuando sueltas (si estaba grande, se hace chiquito). */
+  arrastrarNuevo(t, ev, alSoltar = null) {
     const d = CATALOGO[t];
     if (!d || !this.editando) return;
     if (this.objs.size >= MAX_OBJETOS) { aviso("Ya hay muchísimas cosas: quita alguna para poner otra", 2800); this.sonar("nop"); return; }
@@ -2410,18 +2461,27 @@ export class Casita {
     if (!r) return;
     this._recordar(t);
     this._seleccionar(null);
-    const g = { id: ev.pointerId, obj: r, off: { dx: 0, dy: d.h / 2 }, mov: 99 };
+    const g = { id: ev.pointerId, obj: r, off: { dx: 0, dy: d.h / 2 }, mov: 99, ux: ev.clientX, uy: ev.clientY, nuevo: true };
+    this._llevaNuevo = true;
     this._arrastrarObj(g, ev);
-    const mover = (e) => { if (e.pointerId === g.id) { e.preventDefault(); this._arrastrarObj(g, e); } };
+    const mover = (e) => { if (e.pointerId === g.id) { e.preventDefault(); g.ux = e.clientX; g.uy = e.clientY; this._arrastrarObj(g, e); } };
+    const terminar = (e) => {
+      this._llevaNuevo = false;
+      cancelAnimationFrame(this._rqAuto);
+      if (this.objs.has(o.id)) {
+        this._soltarObj(g, e);
+        // «Deshacer» la quita de una vez (y si fue a dar a la basura, ni cuenta).
+        this.pila.length = Math.min(this.pila.length, base + (g.basura ? 0 : 1));
+        this.deshacerB.disabled = !this.pila.length;
+      }
+      try { alSoltar?.(); } catch (er) { /* nada */ }
+    };
     const soltar = (e) => {
       if (e.pointerId !== g.id) return;
       removeEventListener("pointermove", mover); removeEventListener("pointerup", soltar); removeEventListener("pointercancel", soltar);
-      cancelAnimationFrame(this._rqAuto);
-      if (!this.objs.has(o.id)) return;
-      this._soltarObj(g, e);
-      // «Deshacer» la quita de una vez (y si fue a dar a la basura, ni cuenta).
-      this.pila.length = Math.min(this.pila.length, base + (g.basura ? 0 : 1));
-      this.deshacerB.disabled = !this.pila.length;
+      // (Fase 79) Si el navegador canceló el dedo (creyó que deslizabas), se sigue con el toque hasta que lo levantes.
+      if (e.type === "pointercancel" && e.pointerType === "touch" && this.objs.has(o.id)) { this._seguirToque(g.ux, g.uy, (ev2) => this._arrastrarObj(g, ev2), terminar); return; }
+      terminar(e);
     };
     addEventListener("pointermove", mover, { passive: false }); addEventListener("pointerup", soltar); addEventListener("pointercancel", soltar);
     this.deshacerB.disabled = false;
@@ -2636,7 +2696,7 @@ export class Casita {
     return [...this.objs.values()].filter((q) => q !== r && q.o.c === c && q.d.capa === "piso" && !q.d.mascota && !q.d.portatil && !(puedeSubir(q.d) && this._encima(q.gx, q.o.y, q.o.id))).map((q) => this.nav.huella(q)).filter(Boolean);
   }
   /** (Fase 75) El lugar libre MÁS CERCANO a donde lo llevas, sin irse lejos (a lo más ~60): si no hay, null (no cabe). */
-  _libreCerca(r, gx, y, hs) {
+  _libreCerca(r, gx, y, hs, radio = 60) {
     const { c } = enCuarto(gx), x0 = inicioDe(c), cw = cuarto(c).w, w2 = r.d.w / 2, a = x0 + w2 + 4, b = x0 + cw - w2 - 4, fr = frenteDe(c);
     const libre = (x, yy) => {
       if (x < a || x > b || yy < FONDO + 4 || yy > fr - 4) return false;
@@ -2646,7 +2706,8 @@ export class Casita {
     const xx = lim(gx, a, b);
     if (libre(xx, y)) return { x: xx, y };
     let mejor = null, dm = 1e9;
-    for (let dx = -60; dx <= 60; dx += 6) for (const dy of [0, 10, -10, 20, -20, 30, -30]) {
+    const paso = radio > 60 ? 12 : 6, dys = radio > 60 ? [0, 10, -10, 20, -20, 30, -30, 45, -45, 60, -60, 80, -80] : [0, 10, -10, 20, -20, 30, -30];
+    for (let dx = -radio; dx <= radio; dx += paso) for (const dy of dys) {
       const dd = Math.hypot(dx, dy * 1.6);
       if (dd < dm && libre(xx + dx, y + dy)) { dm = dd; mejor = { x: xx + dx, y: y + dy }; }
     }
@@ -2725,7 +2786,15 @@ export class Casita {
     if (g.basura) { this._colocar(r); this._borrar(r); return; }
     if (g.gx == null) { this._colocar(r); return; }
     // (Fase 75) Acomodando: donde no cabe (se veía en rojo), regresa a su lugar; si cabe, queda justo donde se veía.
-    if (!g.jugando && g.dest === null) { r.n.classList.remove("no-cabe"); this._colocar(r); this._noAqui(); aviso("Ahí no cabe: regresó a su lugar", 1800); this._seleccionar(r); return; }
+    if (!g.jugando && g.dest === null) {
+      r.n.classList.remove("no-cabe");
+      // (Fase 79) Lo nuevo del cajón todavía no tiene «su lugar» (antes regresaba a donde nació, junto al cajón, y
+      // parecía puesto en cualquier lado): busca el lugar libre más cercano a donde lo soltaste; si no hay, no se pone.
+      const L = g.nuevo ? this._libreCerca(r, g.gx, g.y, g.hs || this._huellasOtros(r), 320) : null;
+      if (L) g.dest = L;
+      else if (g.nuevo) { g.basura = true; this._colocar(r); this._borrar(r); aviso("Ahí no cabe: no se puso", 1800); return; }
+      else { this._colocar(r); this._noAqui(); aviso("Ahí no cabe: regresó a su lugar", 1800); this._seleccionar(r); return; }
+    }
     if (!g.jugando && g.dest) { g.gx = g.dest.x; g.y = g.dest.y; }
     // (Fase 69) Una cosita soltada encima de un organizador se guarda adentro, en el siguiente hueco libre.
     { const q = this._guardaEn(r, g.gx, g.y); if (q) { this._guardar(q, r); return; } }

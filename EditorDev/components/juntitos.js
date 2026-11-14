@@ -263,7 +263,7 @@ export class Juntitos {
     this._finZona?.();
     this.A?.limpiar();
     this.A = null;
-    this.dj?.limpiar(); this.dj = null;
+    this.dj?.limpiar(); this.dj = null; document.documentElement.classList.remove("ca-abierta");   // (Fase 79: por si acaso)
     if (this.mapa) { this.mapa.m.remove(); this.mapa = null; }
     this.capa.querySelectorAll(".jt-carta-mes").forEach((n) => n.remove());
     this.secPanel.classList.remove("ver");
@@ -295,7 +295,7 @@ export class Juntitos {
     this.tab = tab;
     this._marcar(tab);
     this._parar?.(); this._parar = null;
-    this.dj?.limpiar(); this.dj = null;
+    this.dj?.limpiar(); this.dj = null; document.documentElement.classList.remove("ca-abierta");   // (Fase 79: por si acaso)
     this.secTit.textContent = TITULOS[tab] || "";
     // (Entre pestañas, la página entra desde el lado de la que tocaste; desde el mapa, sube como siempre.)
     if (antes !== "inicio" && this.secPanel.classList.contains("ver") && !reducido()) {
@@ -331,7 +331,7 @@ export class Juntitos {
     this._marcar("inicio");
     this.tab = "inicio";
     this.capa.dataset.tab = "inicio";
-    this.dj?.limpiar(); this.dj = null;
+    this.dj?.limpiar(); this.dj = null; document.documentElement.classList.remove("ca-abierta");   // (Fase 79: por si acaso)
     this.secPanel.classList.remove("ver");
     this._refrescarMapa();
     if (!this._parar && this.A) this._parar = this.A.cada(() => this._refrescarMapa(), 30000);

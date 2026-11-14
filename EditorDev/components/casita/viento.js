@@ -61,7 +61,8 @@ export class Viento {
     if (document.hidden) return false;
     this._ultimo = ms;
     const c = j.vistaCuarto, cu = c && cuarto(c);
-    if (!cu?.afuera || sinMov() || nivel(j.gfx) < 1) { this._quieto(); this.f = 0; return false; }
+    // (Fase 79: acomodando tampoco: los árboles se quedan quietos mientras pones y arrastras cosas.)
+    if (!cu?.afuera || sinMov() || nivel(j.gfx) < 1 || j.editando) { this._quieto(); this.f = 0; return false; }
     if (!this.activo) { this.activo = true; j.raiz.classList.add("viento-js"); }
     const t = Date.now() / 1000, clima = j.climaActual?.() || "sol", f = (this.f = fuerzaViento(t, clima)), cuadro = ++this._n;
     // (Fase 68) El vaivén lleva su propia fase, que avanza poquito a poquito (más rápido con más viento). Antes se

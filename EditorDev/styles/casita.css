@@ -1205,7 +1205,9 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-muro-pared::after { left: 100%; background: linear-gradient(90deg, rgba(90, 40, 70, .1) 0 4px, rgba(90, 40, 70, .05) 4px 8px, transparent 8px); }
 /* La luz ambiental de cada cuarto (cambia con la hora). */
 .ca-ambiente { position: absolute; top: -900px; height: 1660px; z-index: 4999; pointer-events: none; opacity: 0; transition: background-color .8s; }
-.ca.fx2 .ca-ambiente { opacity: 1; mix-blend-mode: soft-light; }
+/* (Fase 79) Sin mezcla «soft-light»: obligaba al teléfono a dibujar todo el cuarto otra vez debajo de este velo en cada
+   cuadro (en el jardín, 2400 × 2700). Un velo de color normal, más suave, se ve casi igual y no cuesta nada. */
+.ca.fx2 .ca-ambiente { opacity: .45; }
 .ca-ambiente.sala { background-color: rgba(255, 170, 120, .32); }
 .ca-ambiente.cocina { background-color: rgba(255, 215, 110, .32); }
 .ca-ambiente.recamara { background-color: rgba(200, 140, 255, .3); }
@@ -2100,7 +2102,9 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-obj.levantado.posado { transform: translateY(-3px) scale(1.03) rotate(var(--incl, 0deg)); filter: drop-shadow(0 3px 2px rgba(80, 40, 60, .25)); }
 /* (Fase 76) El lienzo tiene su propia capa: al pellizcar (o con el zoom del mensaje) sólo se escala esa capa ya pintada,
    sin volver a dibujar toda la casita en cada paso (eso, en el teléfono, se veía como parpadeos y cosas que no salían). */
-.ca-lienzo { will-change: transform; backface-visibility: hidden; }
+/* (Fase 79) …pero sólo mientras pellizcas (index.js le pone .pellizco). Si se queda siempre, el teléfono guarda lo
+   dibujado al tamaño más grande al que llegó; al alejar o al entrar a Acomodar se le acababa la memoria de video. */
+.ca-lienzo.pellizco { will-change: transform; }
 /* (Fase 76) El sartén y la olla en pixel: adentro se ve lo que se cocina; si la receta no tiene platillo que mostrar
    (un chocolate, unas papitas), se ve el relleno del color de la comida. */
 .ca-obj.estufa:not(.guiso-liso) .relleno { display: none; }
@@ -2131,3 +2135,35 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-hud.v72 > .ca-nec { position: relative; left: auto; right: auto; top: auto; z-index: auto; flex: 1 1 0; min-width: 0; align-self: center; }
 /* (Fase 77) «Mensajes» y «Acomodar» tocaban la orilla de su botón: letra un pelito más chica y apretadita, con aire. */
 .ca-hud.v72 .ca-r span { font-size: 9px; letter-spacing: -.2px; max-width: 44px; }
+
+/* ═══ Fase 79: estable en el teléfono (sin parpadeos, sin cosas ni monitos que desaparecen) ═══
+   En el teléfono, cada capa que el navegador pinta aparte ocupa memoria de video. Con la casita había entre 170 y 290
+   capas; al pasarse de la memoria, el navegador deja de pintar pedazos (muebles, el monito, el cajón) y parpadea. */
+/* Mientras juegas, lo que queda atrás de la casita no se pinta (el mapa de «Nuestros días», el menú principal, el editor). */
+html.ca-abierta body > :is(.ed-barra, .ed-lateral, .ed-velo, .ed-centro, .ed-hoja-sec, .ed-insp, .ed-pestana, .ed-foco, .mp-capa, .pro-barra, .pro-herr, .pro-menu, .pro-borde) { visibility: hidden !important; }
+html.ca-abierta .jt-capa > :is(.jt-fondo, .jt-fondo-ctl, .jt-mapa-dist, .jt-mov, .jt-cab, .jt-sheet, .jt-nav) { visibility: hidden !important; }
+/* Los cuartos que no se ven tampoco (ni su velo de luz): antes sólo se pausaban. */
+.ca-cuarto.lejos, .ca-ambiente.lejos, .ca-oscuro.lejos { visibility: hidden; }
+/* La viñeta ya no tenía dibujo (es un degradado liso), pero su capa del tamaño de la pantalla seguía ahí. */
+.ca-escena::after { display: none; }
+/* Las motitas de polvo flotando, sólo en Calidad y Ultra (cada una era una capa animada). */
+.ca:not(.fx3) .ca-mota { display: none; }
+/* Acomodando, los árboles se quedan quietos y sin capa propia (el viento se apaga mientras acomodas). */
+.ca.editando :is(.ca-esc .esc-copa, .ca-obj .copa) { animation: none; will-change: auto; }
+/* La capa de la luz (la noche) es más grande que la pantalla: al alejar con dos dedos se achica junto con la casita y
+   antes dejaba un rectángulo de noche en medio y lo demás de día. Ahora sigue cubriendo todo. */
+.ca-gl { inset: auto; left: -32%; top: -32%; width: 164%; height: 164%; }
+/* Las animaciones de los cuartos que no se ven, también las de sus ::before y ::after (la lluvia, los rayos del sol,
+   las mariposas): la regla de «pausar lo lejano» no las alcanzaba y seguían corriendo sin que nadie las viera. */
+.ca-cuarto.lejos::before, .ca-cuarto.lejos::after, .ca-cuarto.lejos *::before, .ca-cuarto.lejos *::after { animation: none !important; }
+/* Acomodando: el monito y los adornos se quedan quietos. Cada animación del monito (respirar, el peso, la carita, el
+   parpadeo) era una capa aparte; transparentito como se ve al acomodar, el teléfono tenía que juntarlas en otra capa
+   más, y era cuando se le perdían pedazos (la cabeza sola, sin piernas). */
+.ca.editando .ca-monito :is(*, *::before, *::after) { animation: none !important; }
+.ca.editando .ca-obj :is(svg *, .ca-obj-arte) { animation-play-state: paused !important; }
+/* Las tarjetas del cajón entran con su animación y ya: con «both» la animación se quedaba puesta para siempre y cada
+   tarjeta seguía siendo una capa aparte (28 capas sólo en el cajón). */
+.ca-cajon.v69 .ca-cat-b { animation-fill-mode: backwards; }
+/* Detrás de la casita (que ya tiene su fondo) no hace falta pintar el fondo de Juntitos ni el panel del editor. */
+html.ca-abierta .ed-panel { visibility: hidden !important; }
+html.ca-abierta .jt-capa, html.ca-abierta .jt-capa > .jt-secpanel { background: transparent !important; }
