@@ -84,6 +84,9 @@ export class Vista3D {
     j.escena.append(this.n);
     this._ro.observe(this.n);
     this._medir();
+    // (Fase 81) En el celular parado el cuarto completo sale chiquito: se abre ya acercado (se aleja con dos dedos o
+    // dos toques), centrado un poquito abajo, donde están el piso y los muebles.
+    if (this.vw < this.vh * 0.8) { this.zoom = 1.42; this.pan = [0, -this.vh * 0.04]; this._limitarPan(); this.zoom0 = 1.42; } else this.zoom0 = 1;
     this._titulo();
     this.n.classList.remove("ver");
     void this.n.offsetWidth;
@@ -120,7 +123,7 @@ export class Vista3D {
     };
     if (rapido || reducido()) { fin(); return; }
     const vuelta = Math.round(this.th / 360) * 360;
-    this.tw = { th0: this.th, th1: vuelta, z0: this.zoom, z1: 1, p0: [...this.pan], p1: [0, 0], t0: performance.now(), ms: Math.min(950, 380 + Math.abs(vuelta - this.th) * 5), fin };
+    this.tw = { th0: this.th, th1: vuelta, z0: this.zoom, z1: this.zoom0 || 1, p0: [...this.pan], p1: [...this.pan], t0: performance.now(), ms: Math.min(950, 380 + Math.abs(vuelta - this.th) * 5), fin };
     j.sonar?.("whoosh", { volumen: 0.35 });
   }
   destruir() { this.cerrando = true; this.abierta = false; cancelAnimationFrame(this.raf); this._ro?.disconnect(); this.n?.remove(); this.cola.clear(); this.vistas.clear(); }
@@ -218,9 +221,9 @@ export class Vista3D {
     const dx = e.clientX - A.x0, dy = e.clientY - A.y0;
     if (!A.mov && Math.hypot(dx, dy) > 6) A.mov = true;
     if (!A.mov) return;
-    // Acercado, el dedo mueve la vista (para ver un rincón); de lejos, gira el cuarto.
-    if (this.zoom > 1.05) { A.pano = true; this.pan = [A.p0[0] + dx, A.p0[1] + dy]; this._limitarPan(); }
-    else this.th = A.th0 + dx * this._gpp();
+    // (Fase 81) Un dedo de lado a lado siempre gira; acercado, de arriba abajo mueve la vista (con dos dedos, a donde sea).
+    this.th = A.th0 + dx * this._gpp();
+    if (this.zoom > 1.02) { this.pan = [this.pan[0], A.p0[1] + dy]; this._limitarPan(); }
     A.hist.push([performance.now(), e.clientX]);
     if (A.hist.length > 8) A.hist.shift();
     this.sucio = true;
@@ -247,7 +250,7 @@ export class Vista3D {
     }
     // Su impulso: lo que se movió en el último ratito.
     const h = A.hist.filter(([t]) => ahora - t < 120);
-    if (!cancelado && !A.pano && h.length >= 2 && !reducido()) {
+    if (!cancelado && h.length >= 2 && !reducido()) {
       const [t0, x0] = h[0], [t1, x1] = h[h.length - 1];
       this.vel = t1 > t0 ? lim(((x1 - x0) / (t1 - t0)) * this._gpp(), -1.1, 1.1) : 0;
     }
@@ -376,7 +379,7 @@ export class Vista3D {
     return false;
   }
   _ayuda() {
-    const t = this._faltan > 0 ? "Preparando la vuelta…" : this.zoom > 1.05 ? "Arrastra para mirar · dos toques: alejar" : "Desliza para darle la vuelta";
+    const t = this._faltan > 0 ? "Preparando la vuelta…" : this.zoom > 1.05 ? "Desliza para girar · dos dedos: acercar y mover" : "Desliza para darle la vuelta";
     if (this.cargaN && this.cargaN.textContent !== t) this.cargaN.textContent = t;
     this.cargaN?.classList.toggle("cargando", this._faltan > 0);
   }

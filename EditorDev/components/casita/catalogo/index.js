@@ -31,6 +31,7 @@ import { REDIBUJOS } from "./redibujos.js";
 import { COCINA75 } from "./cocina75.js";
 import { VISTAS } from "./vistas.js";
 import { MUEBLES78 } from "./muebles78.js";
+import { MUEBLES81 } from "./muebles81.js";
 import { COSAS_MANO } from "./comida.js";
 import { RECETAS, arteReceta } from "./recetas.js";
 export { COSAS_MANO };
@@ -63,6 +64,8 @@ for (const [k, v] of Object.entries(VISTAS)) if (CATALOGO[k]) CATALOGO[k].vistas
 // (Fase 78) Los muebles principales de la recámara, la sala, el estudio y el baño en pixel con su tapa dibujada
 // (muebles78.js): lo que hacen (lugares, acciones, colores) se queda; cambia su construcción y su dibujo.
 for (const [k, f] of Object.entries(MUEBLES78)) if (CATALOGO[k]) { const nuevo = f({ ...CATALOGO[k] }); delete CATALOGO[k].frente; delete CATALOGO[k].vistas; Object.assign(CATALOGO[k], nuevo); }
+// (Fase 81) Lo que no se reconocía (la mesa, la mesita, la mesita redonda, el tocadiscos, las lámparas), con detalle.
+for (const [k, f] of Object.entries(MUEBLES81)) if (CATALOGO[k]) { const nuevo = f({ ...CATALOGO[k] }); delete CATALOGO[k].frente; delete CATALOGO[k].vistas; Object.assign(CATALOGO[k], nuevo); }
 for (const [k, d] of Object.entries(CATALOGO)) {
   d.k = k;
   if (FINOS2[k]) d.nuevo = true;

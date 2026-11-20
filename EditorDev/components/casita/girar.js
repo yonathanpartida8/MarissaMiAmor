@@ -323,11 +323,12 @@ export function vistaGirada(d, e, C, g) {
       const torno = d.forma === "redondo" || (d.forma == null && !!d.torno);
       const asiento = d.forma === "asiento" || (d.forma == null && !caja && !torno && !!d.lugares?.some((l) => l.pose === "sentado"));
       const plano = d.forma === "plano" || (d.forma == null && !caja && !torno && !asiento && PLANOS.test(d.k));
+      const mesa = d.forma === "mesa";
       const grosor = Math.max(1, Math.round((d.grosor ?? 8) / PX));
       // Las patas: abajo, los renglones con huecos por dentro (dos o más tramos) son patas; van en las esquinas.
       let vPatas = H;
       for (let v = H - 1; v > H * 0.45; v--) { if (tramos[v].length >= 2 && b0[v] - a0[v] > W * 0.35) vPatas = v; else break; }
-      const patita = Math.max(1, Math.min(3, Math.round(D * 0.16)));
+      const patita = d.forma === "mesa" ? Math.max(2, Math.min(4, d.pata || 3)) : Math.max(1, Math.min(3, Math.round(D * 0.16)));
       let vSeat = Math.round(H * 0.5);
       if (asiento) { let mx = -1; for (let v = Math.floor(H * 0.35); v < H * 0.85; v++) { const w = b0[v] - a0[v]; if (w > mx) { mx = w; vSeat = v; } } }
       const perfil = PERFILES[d.k] || d.perfil;
@@ -341,6 +342,15 @@ export function vistaGirada(d, e, C, g) {
           let hay = false;
           for (const [y0, y1, z0, z1] of perfil) if (py >= y0 && py < y1) { hay = true; if (z >= Math.floor(z0 * D) && z <= Math.max(Math.floor(z0 * D), Math.ceil(z1 * D) - 1)) return true; }
           if (hay) return false;
+        }
+        // (Fase 81) Una MESA de verdad: lo ancho (la tapa, el faldón, la repisa de abajo) va de lado a lado y de
+        // enfrente a atrás; lo angosto de las orillas (las patas) va en las cuatro esquinas, en todos sus renglones (no
+        // sólo los de hasta abajo); y lo angosto de en medio (las revistas en la repisa) queda en medio.
+        if (mesa) {
+          const ts = tramos[v], t = ts.find(([x, y]) => u >= x && u <= y), ancho = t ? t[1] - t[0] + 1 : 1;
+          if (ancho >= anchoMax * 0.55) return true;
+          if (ts.length >= 2 && (t === ts[0] || t === ts[ts.length - 1])) return z < patita || z >= D - patita;
+          return Math.abs(z + 0.5 - cz) <= Math.max(0.5, (D * ancho) / anchoMax / 2) + 0.01;
         }
         if (plano) return Math.abs(z + 0.5 - cz) <= grosor / 2 + 0.01;
         if (v >= vPatas && !torno) return z < patita || z >= D - patita;

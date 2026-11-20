@@ -1423,6 +1423,24 @@ corrigió la causa de cada cosa, sin quitar funciones.
 | **Probado** | Prueba nueva de la fase en celular parado (390×844), acostado (844×390) y compu (1280×800): el botón 3D sólo adentro; en sala, cocina, recámara, baño y estudio abre, gira a 90°, 180° y 270° con todas las vistas listas y atrás lo cierra (sin salir del juego); «Más» lo abre; Acomodar lo cierra; sentarse en el sofá y acostarse en la cama terminan de bulto y al irse no queda nada; dos órdenes seguidas mientras se para llegan a la última. 0 errores en las tres. Fotos de cada cuarto en 3D a 45°, 90°, 135°, 180°, 225° y 315°, y de noche; gestos (deslizar con impulso, doble toque, rueda, flechas, Escape) revisados. Un cuadro del 3D tarda de 1 a 7 ms aquí y gira a ~60 cuadros por segundo. |
 | **No probado en teléfonos de verdad** | Todo se probó en Chromium con toques simulados. En un teléfono de verdad preparar cada vista girada tarda más (aquí de 3 a 50 ms cada una): la primera vuelta puede mostrar un momento el mueble del ángulo de junto («Preparando la vuelta…») hasta que esté listo. En el celular parado el cuarto entero se ve chiquito (cabe completo); se acerca con dos dedos o dos toques. No hay cambios en el servidor: no hace falta `librito actualizar`. |
 
+### Fase 81: muebles que se nota qué son (con detalle) y el 3D más grande en el teléfono
+
+Se revisó el catálogo entero de frente y girado (hojas de contacto de sala, cocina, recámara, baño, estudio y
+decoración) buscando lo que no se reconocía. Se redibujaron cuadrito por cuadrito (`catalogo/muebles81.js`), con luz
+arriba a la izquierda, sombra abajo a la derecha, vetas y adornos; lo que hace cada cosa no cambia.
+
+| | |
+| --- | --- |
+| **La mesa de la cocina** | Antes, un bloque blanco con patitas. Ahora es de madera: canto grueso con su veta, faldón tallado, cuatro patas torneadas y un camino de mesa del color elegido (con su corazón bordado y sus borlitas) que cuelga por enfrente; vista desde arriba, sus tablas y el camino a lo largo, y su florero de tulipanes (se esconde al servir, como antes; los platillos se siguen sirviendo en el mismo lugar). |
+| **La mesita de la sala** | Tapa delgada con su canto, cajoncito con jaladera de latón, patas curvas largas y una repisa abajo con revistas; arriba un florerito con su rosa, libros apilados y una carpetita de encaje. |
+| **La mesita redonda** | Ya no parece pastel: pedestal torneado con su pie redondo y un mantel corto con pliegues y encaje de ondas; arriba, una velita. |
+| **El tocadiscos** | En su mueble de madera con la bocina de tela y los discos guardados de colores; el disco se ve desde arriba (surcos, etiqueta, plato, brazo y perillas). Las notitas siguen saliendo al tocar. |
+| **Lámparas, bocina y bote** | La lámpara de pie con pantalla plisada, ribete y borlitas, poste de latón con anillos y base redonda. La de lava con su vidrio del color elegido, su brillo y tapa y base cromadas (la lava sigue moviéndose). La bocina de fiesta con su tweeter, su woofer (late con la música) y su tira de luz. El bote de basura de pedal con su tapa que se abre, costillitas y corazón. |
+| **Mesas que giran bien** | Forma nueva «mesa» en girar.js: girada, la tapa, el faldón y la repisa van de lado a lado, las patas en las cuatro esquinas (en todos sus renglones) y lo de en medio de la repisa, en medio. Vistas desde arriba, las tablas son rayitas largas y suaves (las de antes se veían picaditas al girar). |
+| **El 3D en el teléfono** | En el celular parado el cuarto se abre ya acercado (antes cabía completo pero chiquito); un dedo de lado a lado siempre gira y, acercado, de arriba abajo mueve la vista; con dos dedos se acerca y se mueve a donde sea; dos toques alejan para verlo completo. |
+| **Probado** | Las 258 cosas del catálogo se leen como imagen (sólo «cosita», el comodín vacío, a propósito). Prueba de la Fase 80 en celular y compu: 0 fallas y 0 errores. La mesa nueva sirve los platillos en su lugar y esconde el florero. Fotos de la sala, la cocina y la recámara en la vista normal y en 3D, en celular y compu. |
+| **No probado en teléfonos de verdad** | Todo en Chromium con toques simulados. No hay cambios en el servidor: no hace falta `librito actualizar`. |
+
 ## Cómo está hecho
 
 ```
