@@ -271,6 +271,102 @@ function bote() {
 }
 const TAPA_BOTE = [{ clase: "tapa", p: [[5, 1, "("], [6, 1, ")"], [7, 1, ")"], [8, 1, "("], ...[2, 3, 4].flatMap((y) => Array.from({ length: 12 }, (_, i) => [i + 1, y, y === 2 ? (i < 3 ? "{" : "]") : y === 3 ? "[" : ")"]))] }];
 
+/* ═════════════ (Fase 82) LA CONSOLA DE VIDEOJUEGOS (38 × 33): tele retro del color elegido con antenas, perillas y
+   bocina, sobre su mueble con la consolita, el control y los juegos. La pantalla y el juego siguen vivos. ═════════════ */
+function consola() {
+  const L = lienzo(38, 33);
+  // Las antenas con sus bolitas.
+  L.linea(14, 2, 10, 0, "h"); L.linea(23, 2, 27, 0, "h"); L.pon(10, 0, "I"); L.pon(27, 0, "I");
+  // La tele: carcasa redondita (luz arriba a la izquierda), la pantalla hundida y el panel con perillas y bocina.
+  L.caja(5, 3, 32, 19, "["); L.caja(6, 2, 31, 2, "]"); L.caja(5, 3, 5, 18, "]"); L.caja(6, 3, 31, 3, "{");
+  L.caja(32, 3, 32, 19, ")"); L.caja(6, 19, 31, 19, ")"); L.pon(5, 19, "."); L.pon(32, 19, "."); L.pon(5, 2, "."); L.pon(32, 2, ".");
+  L.caja(7, 4, 27, 18, "%"); L.caja(7, 4, 27, 4, "0"); L.caja(7, 4, 7, 18, "0"); L.caja(27, 5, 27, 18, "&"); L.caja(8, 18, 27, 18, "&");
+  for (const y of [6, 10]) { L.pon(29, y, "k"); L.pon(30, y, "j"); L.pon(29, y + 1, "i"); L.pon(30, y + 1, "h"); }
+  for (let y = 13; y <= 17; y += 2) L.caja(29, y, 30, y, ")");
+  // Sus patitas.
+  L.caja(9, 20, 10, 20, "h"); L.caja(27, 20, 28, 20, "h");
+  // El mueble de la tele (madera clara): tapa, dos huecos y patitas.
+  L.caja(1, 21, 36, 21, "f"); L.caja(0, 22, 37, 30, "e"); for (let y = 22; y <= 30; y++) { L.pon(0, y, "f"); L.pon(37, y, "d"); } L.caja(0, 30, 37, 30, "d");
+  L.hundido(2, 23, 17, 29, "%", "0", "&"); L.hundido(20, 23, 35, 29, "%", "0", "&");
+  // La consolita (con su lucecita) y el control con su cable.
+  L.caja(4, 26, 13, 28, "C"); L.caja(4, 26, 13, 26, "#"); L.caja(4, 28, 13, 28, "E"); L.pon(5, 27, "w"); L.caja(8, 27, 11, 27, "D");
+  L.caja(14, 27, 16, 28, "I"); L.pon(14, 27, "J"); L.pon(16, 28, "H"); L.linea(13, 27, 14, 27, "h");
+  // Los juegos parados, de colores.
+  const lomos = ["A", "w", "!", "Z", "M", "x", "S", "s", "I", "9", "B", "H", "R", "?"];
+  for (let x = 21; x <= 34; x++) { const c = lomos[(x - 21) % lomos.length], top = 24 + ((x * 7) % 3 === 0 ? 1 : 0); L.caja(x, top, x, 28, c); L.pon(x, top, "#"); }
+  L.patas([2, 34], 31, 32, "c", "b", "a");
+  return L.filas();
+}
+
+/* ═════════════ EL PUFF (22 × 15): redondo, capitonado (botoncitos y costuras), con su ribete y su luz. ═════════════ */
+function puff() {
+  const L = lienzo(22, 15);
+  const ancho = [7, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 8, 7];
+  for (let y = 0; y < 15; y++) {
+    const r = ancho[y], a = 11 - r, b = 10 + r;
+    for (let x = a; x <= b; x++) {
+      const t = (x - a) / Math.max(1, b - a);
+      // (Acolchonado: claro arriba y a la izquierda, sombra a la derecha y abajo; sin rayas que parezcan puertas.)
+      L.pon(x, y, y <= 1 ? "{" : t < 0.14 ? "]" : t > 0.84 || y >= 11 ? ")" : y <= 4 && t < 0.6 ? "]" : "[");
+    }
+  }
+  // El ribete de arriba y el de abajo (piping), los botoncitos del capitonado y su luz.
+  for (let x = 1; x <= 20; x++) { L.pon(x, 2, x < 5 ? "{" : "]"); L.pon(x, 12, ")"); }
+  // Los botoncitos del capitonado, cada uno con su hundidito de luz arriba.
+  for (const [x, y] of [[6, 5], [11, 5], [16, 5], [8, 8], [14, 8]]) { L.pon(x, y, "("); L.pon(x, y - 1, ")"); }
+  L.caja(2, 13, 19, 13, "("); L.caja(4, 14, 17, 14, "(");
+  return L.filas();
+}
+function tapaPuff(u, z, W, D) {
+  // Visto desde arriba: redondo, con costuras que van al botón de en medio y cuatro botoncitos.
+  const x = (u + 0.5 - W / 2) / (W / 2), y = (z + 0.5 - D / 2) / (D / 2), r = Math.hypot(x, y), ang = Math.atan2(y, x);
+  if (r > 0.9) return "]";
+  if (r < 0.12) return "(";
+  if (Math.abs(r - 0.5) < 0.1 && Math.abs(Math.sin(ang * 2)) < 0.25) return "(";
+  if (Math.abs(Math.sin(ang * 3)) < 0.1) return ")";
+  return x + y < -0.4 ? "{" : "[";
+}
+
+/* ═════════════ LA SILLA DE LA COCINA (16 × 28): de madera, respaldo con travesaños y corazón tallado, cojín del color
+   elegido y patas con su travesaño. ═════════════ */
+function silla() {
+  const L = lienzo(16, 28);
+  // El respaldo: los dos postes, el copete curvo con su corazón y los travesaños.
+  for (let y = 1; y <= 14; y++) { L.pon(1, y, "e"); L.pon(2, y, "d"); L.pon(13, y, "d"); L.pon(14, y, "c"); }
+  L.caja(2, 0, 13, 0, "f"); L.caja(1, 1, 14, 3, "d"); L.caja(1, 1, 14, 1, "e"); L.caja(2, 3, 13, 3, "c"); L.pon(0, 1, "e"); L.pon(15, 1, "c");
+  for (const [x, y] of [[6, 1], [8, 1], [6, 2], [7, 2], [8, 2], [7, 3]]) L.pon(x + 0.5, y, "f");
+  for (const y of [6, 9, 12]) { L.caja(3, y, 12, y, "d"); L.caja(3, y + 1, 12, y + 1, "b"); }
+  // El cojín (del color elegido), con su botón y su orilla, sobre el asiento de madera.
+  L.caja(0, 15, 15, 15, "{"); L.caja(0, 16, 15, 17, "["); L.caja(0, 18, 15, 18, ")"); L.pon(0, 16, "]"); L.pon(15, 16, ")"); L.pon(15, 17, ")");
+  L.pon(7, 16, ")"); L.pon(8, 16, "(");
+  L.caja(0, 19, 15, 19, "d"); L.caja(1, 20, 14, 20, "b");
+  // Las patas (con su anillo torneado) y el travesaño de abajo.
+  for (const x of [1, 13]) { for (let y = 21; y <= 26; y++) { L.pon(x, y, "d"); L.pon(x + 1, y, "c"); } L.pon(x, 22, "e"); L.pon(x + 1, 22, "b"); L.pon(x, 27, "a"); L.pon(x + 1, 27, "a"); }
+  L.caja(3, 24, 12, 24, "c");
+  return L.filas();
+}
+
+/* ═════════════ EL EXCUSADO (20 × 29): tanque con su tapa y palanca cromada, la funda esponjosita de la tapa, la taza
+   redondita y su pie. ═════════════ */
+function excusado() {
+  const L = lienzo(20, 29);
+  // El tanque.
+  L.caja(2, 0, 17, 1, "#"); L.caja(2, 1, 17, 1, "k"); L.pon(2, 0, "#"); L.pon(17, 0, "k");
+  L.caja(3, 2, 16, 11, "#"); for (let y = 2; y <= 11; y++) { L.pon(3, y, "C"); L.pon(4, y, "#"); L.pon(16, y, "j"); L.pon(15, y, "k"); }
+  L.caja(4, 11, 15, 11, "k");
+  L.caja(12, 4, 14, 4, "j"); L.pon(14, 4, "i"); L.pon(12, 5, "i");
+  // La tapa con su funda rosita y la orilla del asiento.
+  L.caja(1, 12, 18, 12, "J"); L.caja(0, 13, 19, 14, "I"); L.caja(1, 15, 18, 15, "H");
+  for (let x = 1; x <= 18; x += 3) L.pon(x, 13, "J");
+  L.caja(1, 16, 18, 16, "k"); L.pon(1, 16, "#");
+  // La taza redondita (más angosta abajo) y su pie.
+  const taza = [[1, 18], [1, 18], [2, 17], [3, 16], [4, 15]];
+  taza.forEach(([a, b], i) => { const y = 17 + i; L.caja(a, y, b, y, "#"); L.pon(a, y, "C"); L.pon(b, y, "j"); L.pon(b - 1, y, "k"); });
+  for (let y = 22; y <= 26; y++) { L.caja(6, y, 13, y, "#"); L.pon(6, y, "C"); L.pon(13, y, "j"); L.pon(12, y, "k"); }
+  L.caja(4, 27, 15, 27, "k"); L.pon(4, 27, "#"); L.caja(4, 28, 15, 28, "j");
+  return L.filas();
+}
+
 /** Los redibujos: k → función que recibe lo de antes (para conservar lo vivo) y regresa lo nuevo. */
 export const MUEBLES81 = {
   mesa: () => pix({ filas: mesa(), capas: FLORERO, tapa: tapaMesa, hondo: 116, forma: "mesa", pata: 3 }),
@@ -281,4 +377,8 @@ export const MUEBLES81 = {
   lampara_lava: (viejo) => conVivo({ filas: lava(), torno: true }, viejo.arte),
   bocina: (viejo) => conVivo({ filas: bocina(), capas: CONO, hondo: 48, forma: "caja" }, viejo.arte, ["cono", "led"]),
   bote_basura: () => pix({ filas: bote(), capas: TAPA_BOTE, torno: true }),
+  consola: (viejo) => conVivo({ filas: consola(), hondo: 64, forma: "caja", perfil: [[0, 84, 0.2, 0.8]] }, viejo.arte),
+  puff: () => pix({ filas: puff(), tapa: tapaPuff, torno: true, hondo: 84 }),
+  silla: () => pix({ filas: silla() }),
+  inodoro: () => pix({ filas: excusado(), perfil: [[0, 48, 0.62, 1], [48, 68, 0, 1]] }),
 };

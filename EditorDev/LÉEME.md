@@ -1441,6 +1441,15 @@ arriba a la izquierda, sombra abajo a la derecha, vetas y adornos; lo que hace c
 | **Probado** | Las 258 cosas del catálogo se leen como imagen (sólo «cosita», el comodín vacío, a propósito). Prueba de la Fase 80 en celular y compu: 0 fallas y 0 errores. La mesa nueva sirve los platillos en su lugar y esconde el florero. Fotos de la sala, la cocina y la recámara en la vista normal y en 3D, en celular y compu. |
 | **No probado en teléfonos de verdad** | Todo en Chromium con toques simulados. No hay cambios en el servidor: no hace falta `librito actualizar`. |
 
+### Fase 82: más muebles con detalle (consola, puff, silla, excusado) y sentarse en la orilla
+
+| | |
+| --- | --- |
+| **Lo que se redibujó** | Con la misma revisión en grande de los muebles que vienen de entrada (de frente y girados), en `catalogo/muebles81.js`: la **consola de videojuegos** es una tele retro del color elegido con antenas, perillas y bocina, sobre su mueble con la consolita, el control y los juegos de colores (la pantalla y el jueguito siguen vivos); el **puff** es redondo y acolchonado, capitonado con botoncitos y su ribete, y desde arriba sus costuras al botón de en medio; la **silla de la cocina** es de madera con copete y corazón tallado, travesaños, cojín del color elegido con su botón y patas torneadas con su travesaño; el **excusado** tiene tanque con tapa y palanca cromada, funda esponjosita rosa en la tapa, taza redondita y su pie. |
+| **Sentarse en la orilla** | En un asiento sin respaldo (el puff, un banquito) el monito se sentaba en medio y, si el asiento era hondo, las piernas se le metían adentro. Ahora se sienta hacia la orilla de enfrente con las piernas colgando por fuera (monito3d.js). |
+| **Probado** | Sentarse en la silla, el puff y el excusado: termina sentado de bulto y se ve bien. Las 258 cosas del catálogo se leen como imagen. Prueba de la Fase 80 en celular parado y acostado: 0 fallas, 0 errores. Fotos del estudio, la cocina y el baño, normal y en 3D. |
+| **No probado en teléfonos de verdad** | Todo en Chromium con toques simulados. No hay cambios en el servidor: no hace falta `librito actualizar`. |
+
 ## Cómo está hecho
 
 ```

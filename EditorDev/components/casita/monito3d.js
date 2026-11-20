@@ -330,6 +330,9 @@ export function lugarEn(M, d, l, jx, vg, cel) {
   }
   const atras = (zRes - cz) * PX - 2.7 * cel;
   const y = zAsiento >= 0 && l.pose !== "columpio" ? zAsiento * PX - 1.4 * cel : cadera2d;
-  return { ancla: [l.dx || 0, y, l.mira || zRes >= D ? 0 : atras], ancla3d: "cadera", yaw, pose: POSES.sentado };
+  // (Fase 82) Sin respaldo (un puff, un banquito): se sienta hacia la orilla de enfrente, con las piernas colgando por
+  // fuera (antes quedaba en medio y, si el asiento era hondo, las piernas se metían dentro del asiento).
+  const orilla = Math.min(0, -(D * PX) / 2 + 3.4 * cel);
+  return { ancla: [l.dx || 0, y, l.mira ? 0 : zRes >= D ? orilla : atras], ancla3d: "cadera", yaw, pose: POSES.sentado };
 }
 export { CEL };
