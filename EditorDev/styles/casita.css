@@ -2167,3 +2167,40 @@ html.ca-abierta .jt-capa > :is(.jt-fondo, .jt-fondo-ctl, .jt-mapa-dist, .jt-mov,
 /* Detrás de la casita (que ya tiene su fondo) no hace falta pintar el fondo de Juntitos ni el panel del editor. */
 html.ca-abierta .ed-panel { visibility: hidden !important; }
 html.ca-abierta .jt-capa, html.ca-abierta .jt-capa > .jt-secpanel { background: transparent !important; }
+
+/* ═══ (Fase 80) EL CUARTO EN 3D: un solo lienzo encima de la casita, con su título, «Listo» y dos botones para girar ═══ */
+.ca-girar3d { position: absolute; z-index: 21; right: 12px; bottom: 122px; height: 40px; min-width: 40px; display: none; align-items: center; justify-content: center; gap: 3px; padding: 0 10px 0 8px; border: 0; border-radius: 15px; background: rgba(255, 255, 255, .86); color: #84557a; box-shadow: 0 4px 14px rgba(110, 50, 90, .16); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); font-family: inherit; font-weight: 800; font-size: 12px; line-height: 1; letter-spacing: .02em; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ca-girar3d.ver { display: flex; }
+.ca-girar3d svg { width: 21px; height: 21px; }
+.ca-girar3d:active { transform: scale(.93); }
+.ca.editando .ca-girar3d, .ca.escribiendo .ca-girar3d, .ca.vista3d .ca-girar3d { display: none; }
+:root[data-tema="oscuro"] .ca .ca-girar3d { background: rgba(42, 33, 48, .84); color: var(--ca-tinta); }
+@media (min-width: 900px) { .ca-girar3d { right: 18px; bottom: 128px; } }
+@media (max-height: 460px) { .ca-girar3d { bottom: 64px; right: 64px; } }
+
+.ca-3d { position: absolute; inset: 0; z-index: 30; overflow: hidden; outline: none; opacity: 0; transition: opacity .26s ease, background .6s; touch-action: none; -webkit-user-select: none; user-select: none;
+  background: radial-gradient(130% 90% at 50% 38%, #fff6f9 0%, #fbe5ee 48%, #efd2df 100%); }
+.ca-3d.ver { opacity: 1; }
+.ca-3d.noche { background: radial-gradient(130% 90% at 50% 38%, #3b2f5c 0%, #2a2145 50%, #1b1530 100%); }
+:root[data-tema="oscuro"] .ca .ca-3d:not(.noche) { background: radial-gradient(130% 90% at 50% 38%, #3a2a39 0%, #2b2030 55%, #1f1822 100%); }
+.ca-3d-lienzo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.ca-3d-lienzo:active { cursor: grabbing; }
+.ca-3d-arriba { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 0; pointer-events: none; }
+.ca-3d-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 7px 14px 8px; border-radius: 18px; background: rgba(255, 255, 255, .82); box-shadow: 0 4px 14px rgba(110, 50, 90, .12); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.ca-3d-t b { font-family: inherit; font-weight: 800; font-size: 15px; line-height: 1.15; color: var(--ca-tinta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ca-3d-ayuda { font-family: inherit; font-weight: 600; font-size: 11.5px; line-height: 1.2; color: var(--ca-suave); white-space: nowrap; }
+.ca-3d-ayuda.cargando::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--ca-acento); vertical-align: middle; animation: ca3dLatido .9s ease-in-out infinite; }
+@keyframes ca3dLatido { 50% { opacity: .25; transform: scale(.7); } }
+.ca-3d-listo { pointer-events: auto; flex: none; height: 40px; padding: 0 18px; border: 0; border-radius: 16px; background: var(--ca-acento); color: #fff; font-family: inherit; font-weight: 800; font-size: 14px; line-height: 1; box-shadow: 0 6px 16px rgba(229, 103, 154, .35); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ca-3d-listo:active { transform: scale(.95); }
+.ca-3d-abajo { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 14px calc(14px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+.ca-3d-b { pointer-events: auto; width: 52px; height: 52px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .9); color: #84557a; box-shadow: 0 6px 16px rgba(110, 50, 90, .18); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s; }
+.ca-3d-b svg { width: 26px; height: 26px; }
+.ca-3d-b.izq svg { transform: scaleX(-1); }
+.ca-3d-b:active { transform: scale(.9); }
+:root[data-tema="oscuro"] .ca .ca-3d-t, :root[data-tema="oscuro"] .ca .ca-3d-b, .ca-3d.noche .ca-3d-t, .ca-3d.noche .ca-3d-b { background: rgba(42, 33, 48, .84); color: #f6e9f1; }
+.ca-3d.noche .ca-3d-t b { color: #f6e9f1; }
+.ca-3d.noche .ca-3d-ayuda { color: #c9b6d4; }
+@media (prefers-reduced-motion: reduce) { .ca-3d { transition: none; } .ca-3d-ayuda.cargando::after { animation: none; } }
+/* Mientras se ve el 3D, la casita de abajo no se pinta (no se ve y así el teléfono descansa). */
+.ca.vista3d-quieta .ca-vista { visibility: hidden; }

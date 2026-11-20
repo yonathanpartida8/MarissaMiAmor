@@ -64,6 +64,7 @@ import { texPared, texPiso, texLambrin, texLluvia, texCharcos, pintarFrente, tex
 import { Luces } from "./luces.js";
 import { Puertas, hondoPuerta } from "./puertas.js";
 import { Navegacion } from "./ruta.js";
+import { Vista3D } from "./vista3d.js";
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
@@ -223,6 +224,7 @@ export class Casita {
     this.viento?.apagar();
     clearInterval(this._tReco); this.recolectar?.limpiar(); this.vida?.apagar(); this.fisica?.apagar(); this.cocina?.limpiar();
     this.vivo = false;
+    this.vista3d?.destruir();   // (Fase 80)
     this.sync?.parar();
     this._ro?.disconnect();
     clearInterval(this._reloj); clearInterval(this._amb);
@@ -287,6 +289,7 @@ export class Casita {
     if (this._protegido()) { if (this.mensajes.abierto()) this.mensajes.barra(false); return true; }
     if (this.cerrarMenu()) return true;
     if (this.cerrarHoja()) return true;
+    if (this.vista3d?.abierta) { this.vista3d.cerrar(); return true; }   // (Fase 80)
     if (this.mensajes.abierto()) { this.mensajes.barra(false); return true; }
     if (this.sel) { this._seleccionar(null); return true; }
     if (this.editando) { this._editar(false); return true; }
@@ -316,6 +319,7 @@ export class Casita {
     const completa = this.raiz.classList.contains("completa"), cl = this.climaB?.dataset.k || "sol";
     const ops = [
       ["mapa", "El mapita de la casa", () => this.mapaCasa()],
+      this.vista3d?.puede() ? ["girar", "Darle la vuelta al cuarto (3D)", () => this.vista3d.abrir()] : null,
       [{ sol: "sol", lluvia: "lluvia", tormenta: "rayo", extra: "extra" }[cl] || "sol", "El clima y la hora", () => P.clima(this)],
       puedeVoz() ? ["mic", this.vozB.classList.contains("en-vivo") || this.vozB.classList.contains("llamando") ? "Colgar la voz" : "Hablar en vivo", () => this.voz.alternar()] : null,
       ["sonido", "Sonido y ajustes", () => P.ajustes(this)],
@@ -467,13 +471,16 @@ export class Casita {
     // (Fase 72) Lo de la barra de abajo ahora vive en «Más» (estos botones guardan su estado: clima, voz).
     this.climaB = el("i", { html: ICO.sol });
     this.vozB = el("i", { html: ICO.mic });
+    // (Fase 80) Darle la vuelta al cuarto en 3D (sólo adentro): un botoncito redondo abajo a la derecha.
+    this.vista3d = new Vista3D(this);
+    this.girar3dB = el("button.ca-girar3d", { type: "button", "aria-label": "Darle la vuelta al cuarto en 3D", title: "Darle la vuelta al cuarto (3D)", onClick: () => this.vista3d.abrir() }, [el("i", { html: ICO.girar }), el("span", { text: "3D" })]);
     this.salirN = el("div.ca-salir-aviso", { role: "status", "aria-live": "polite" }, [el("i", { html: ICO.corazon }), el("span", { text: "¿Quieres salir del juego? Toca atrás otra vez" })]);
     this.flashN = el("i.ca-flash", { "aria-hidden": "true" });
     // (Fase 64) Volver a ver a tu monito (si moviste la cámara): chiquito y discreto.
     this._enfocarB = el("button.ca-enfocar", { type: "button", "aria-label": "Ver a mi monito", title: "Ver a mi monito", html: ICO.enfocar, onClick: () => this.enfocar() });
     // (Fase 67) La canasta de lo que recogen en el patio (con cuántas cosas trae).
     this.canastaB = el("button.ca-canasta-b", { type: "button", "aria-label": "La canasta", title: "La canasta", hidden: "", onClick: () => this._abrirCanasta() }, [el("i.ca-canasta-ico"), el("b.ca-canasta-n")]);
-    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN, this._enfocarB, this.canastaB);
+    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN, this._enfocarB, this.girar3dB, this.canastaB);
     this.raiz.append(this.selN, this.salirN);
   }
 
@@ -991,6 +998,7 @@ export class Casita {
     if (cu.mapa) this.patio?.pintarTerreno();
     if (cu.mapa) { const y = gy ?? (enCuarto(this.yo.gx).c === k ? this.yo.y : MAPA.fondo + 160); v.scrollTop = Math.max(0, (y + MAPA.arriba - 70) * this.k - v.clientHeight / 2); }
     else v.scrollTop = 0;
+    this.girar3dB?.classList.toggle("ver", !cu.afuera);   // (Fase 80: el 3D sólo adentro)
     if (cambio) { this._camLibre = false; this._pintado = false; this.puertasN.pintar(); this.suciedad?.pintar(); try { this.luces?.pintar(); } catch (e) { /* nada */ } }
     if (cu.afuera) this.viento?.prender();   // (Fase 77: afuera se prende; adentro se apaga solo)
     if (cu.afuera && this.raiz.classList.contains("lluvia-cv")) this.lluviaF?.prender();   // (Fase 79: igual la lluvia)
@@ -1538,6 +1546,24 @@ export class Casita {
   }
   /** Caminar hasta (gx, y) (y es lo hondo del piso) y luego `luego()`. */
   _caminar(m, gx, y, luego = null, ya = false, tramo = false, viaje = null, ultimo = true) {
+    // (Fase 80) Si estaba sentado o acostado (de bulto), primero se para de verdad (y da sus pasitos para enfrente);
+    // luego sí camina. Si mientras le das otra orden, al terminar de pararse va a la última.
+    if (!ya && !tramo && m._3d && m.mueble && !m._3dLevantado && !reducido() && nivel(this.gfx) >= 1 && POSE_3D.has(m.accion) && (m.accion === "sentado" || m.accion === "dormido")) {
+      m._trasLevantar = () => this._caminar(m, gx, y, luego, ya, tramo, viaje, ultimo);
+      if (m._levantando) return;
+      m._levantando = true;
+      const S = m._3d;
+      this._levantar3d(m).finally(() => {
+        m._levantando = false;
+        const sigue = m._trasLevantar; m._trasLevantar = null;
+        if (!this.vivo || !sigue) return;
+        // El de siempre aparece justo donde terminó de pararse (sin resbalarse desde el asiento).
+        if (m._3d === S && m._lugarDe) { m._3dLevantado = true; m.gx = m._lugarDe.lx; m.y = m._lugarDe.ly; m.n.style.transitionDuration = "0s"; this._ponerMono(m, m.gx, m.y); void m.n.offsetWidth; }
+        sigue();
+      });
+      return;
+    }
+    if (m._levantando) { m._trasLevantar = null; m._levantando = false; m._t3 = (m._t3 || 0) + 1; }
     clearTimeout(m.tc); clearInterval(m.tp); clearTimeout(m.tGiro);
     // (Fase 65) Si estaba sentado, primero baja del asiento por el lado por donde llegó (no lo atraviesa).
     if (m.mueble && m._lugarDe && !ya && !tramo) { m.gx = m._lugarDe.lx; m.y = m._lugarDe.ly; }
@@ -1719,38 +1745,35 @@ export class Casita {
       const v = vg && !vg.plano ? vg : null, cel = CEL3D * (m.alto || 1), L = lugar3d(M, r.d, l, jx, v, cel);
       m._3d = { r, jx, M, v, g, cel, L, clave: JSON.stringify(m.ropa) + (m.alto || 1) };
       m.n.classList.add("en3d");
-      const cuadros = [];
-      if (!ya && !reducido()) {
-        const [x, y, z] = L.ancla;
-        if (l.pose === "dormido") {
-          // Se sienta en la orilla de enfrente y se va acostando de ladito.
-          const yS = y + (M.medio - 2.4) * cel - 1.4 * cel, zS = -((v?.D ?? 20) * 4) / 2 + 3 * cel;
-          cuadros.push([POSES3D.sentado, [x, yS, zS], "cadera"], [{ ...POSES3D.medio, rodar: L.pose.rodar / 2 }, [x, (y + yS) / 2, (z + zS) / 2], "centro"]);
-        } else {
-          // (Fase 67) Más cuadritos: se agacha, va bajando y se acomoda.
-          const mitad = Object.fromEntries(Object.keys(L.pose).map((k) => [k, POSES3D.agachado[k] + (L.pose[k] - POSES3D.agachado[k]) * 0.55]));
-          cuadros.push([POSES3D.agachado, [x, y - 4 * cel, z - 4 * cel], "cadera"], [mitad, [x, y - 1.8 * cel, z - 1.8 * cel], "cadera"]);
-        }
-      }
-      cuadros.push([L.pose, L.ancla, L.ancla3d]);
+      // (Fase 80) Sentarse o acostarse de verdad: se da la vuelta donde llegó, da pasitos para atrás hasta la orilla,
+      // se agacha y baja hasta el asiento (y en la cama, se acuesta de ladito), y se acomoda.
+      const cuadros = !ya && !reducido() && nivel(this.gfx) >= 1 ? this._secuencia3d(m, m._3d).llegar : [];
+      cuadros.push([L.pose, L.ancla, L.ancla3d, L.yaw, 0]);
       for (let i = 0; i < cuadros.length; i++) {
-        if (i) { await this.esperar(105); if (m._t3 !== tk || m.mueble !== clave) return; }
+        if (m._t3 !== tk || m.mueble !== clave) return;
+        const t0 = performance.now();
         this._cuadro3d(m, ...cuadros[i]);
+        if (i < cuadros.length - 1) { await this.esperar(Math.max(16, (cuadros[i][4] || 62) - (performance.now() - t0))); }
       }
       this._parpadeo3d(m, tk);
     } catch (e) { if (m._t3 === tk) { m.n.classList.remove("en3d"); m._3d = null; m._img3d?.remove(); } }
   }
   /** Un cuadrito del monito de bulto en su mueble. */
-  _cuadro3d(m, pose, ancla, ancla3d) {
+  _cuadro3d(m, pose, ancla, ancla3d, yaw = null) {
     const S = m._3d;
     if (!S) return;
     const { r, M, v, g, cel, L } = S, d = r.d;
-    m._3dUlt = [pose, ancla, ancla3d];
+    m._3dUlt = [pose, ancla, ancla3d, yaw ?? L.yaw];
     // La carita: dormido con los ojitos cerrados; en la tina y el columpio, feliz; si no, la de siempre (o la que toque
     // ahorita: un parpadeo, una sonrisa).
-    const cara = m._cara3d || (m.accion === "dormido" ? "dormido" : m.accion === "banando" || m.accion === "columpio" ? "feliz" : "normal");
-    const im = pintar3d(M, pose, { clave: S.clave, g, yaw: L.yaw, ancla, ancla3d, cel, vg: v, cara });
-    const arte = r.n.querySelector(":scope > .ca-obj-arte");
+    // (Fase 80: mientras llega a la cama y se sienta en la orilla, todavía con los ojitos abiertos.)
+    const cara = m._cara3d || (m.accion === "dormido" ? (ancla3d === "centro" ? "dormido" : "normal") : m.accion === "banando" || m.accion === "columpio" ? "feliz" : "normal");
+    const im = pintar3d(M, pose, { clave: S.clave, g, yaw: yaw ?? L.yaw, ancla, ancla3d, cel, vg: v, cara });
+    // (Fase 80) Parado enfrente del mueble (llegando o yéndose), va encima de lo de enfrente del mueble (la cobija de la
+    // cama, la orilla de la tina): si no, la cobija le tapaba medio cuerpo aunque estuviera afuera.
+    const frA = r.fr && !r.fr.hidden ? r.fr.querySelector(":scope > .ca-obj-arte") : null;
+    const delante = !!frA && ancla3d === "cadera" && ancla[2] < -((v?.D ?? 20) * 4) / 2 + 1;
+    const arte = delante ? frA : r.n.querySelector(":scope > .ca-obj-arte");
     if (!arte) return;
     let n = m._img3d;
     if (!n) n = m._img3d = el("img.ca-mono-3d", { alt: "", draggable: "false", "aria-hidden": "true" });
@@ -1782,10 +1805,89 @@ export class Casita {
     // (Fase 77) Si en ese ratito ya se volvió a sentar (la misma imagen se reusa), no se quita: antes desaparecía
     // sentado hasta su siguiente parpadeo.
     const fin = () => { if (m._3d) return; n?.remove(); m.n.classList.remove("en3d"); };
+    // (Fase 80) Si ya se paró (con su animación completa, al irse caminando), sólo se quita: el de siempre sigue de ahí.
+    if (m._3dLevantado) { m._3dLevantado = false; fin(); return; }
     if (!S || !n || !animar || reducido() || !n.isConnected) { fin(); return; }
     const [x, y, z] = S.L.ancla;
     m._3d = S; this._cuadro3d(m, S.L.ancla3d === "centro" ? { ...POSES3D.sentado } : POSES3D.agachado, S.L.ancla3d === "centro" ? [x, y, z] : [x, y - 4 * S.cel, z - 4 * S.cel], "cadera"); m._3d = null;
     setTimeout(fin, 140);
+  }
+  /** (Fase 80) Un punto del cuarto (gx, y) en las medidas del mueble de bulto (x desde su centro, z hacia atrás desde la
+   *  mitad de lo hondo), con su giro y volteado: para que el monito empiece (y termine) justo donde estaba parado. */
+  _local3d(S, gx, y) {
+    const r = S.r, d = r.d, c = r.o.c, s = cuarto(c).afuera ? 1 : escala3d(c, r.o.y);
+    const X = r.o.f ? r.gx - gx : gx - r.gx, Z = (r.o.y - (hondura(d) * ELEV_GIRO * s) / 2 - y) / (ELEV_GIRO * s);
+    const a = (S.g * Math.PI) / 180, co = Math.cos(a), si = Math.sin(a);
+    return [X * co + Z * si, -X * si + Z * co];
+  }
+  /** (Fase 80) Los cuadritos para sentarse o acostarse (`llegar`) y para pararse e irse (`pararse`):
+   *  [pose, ancla, tipo de ancla, hacia dónde ve, ms]. */
+  _secuencia3d(m, S) {
+    const P = POSES3D, { M, L, cel, v, r } = S, d = r.d, l = d.lugares?.[S.jx] || {}, mez = (a, b, t) => Object.fromEntries(Object.keys(a).map((k) => [k, a[k] + ((b[k] ?? 0) - a[k]) * t]));
+    const yF = v?.H ? v.H * 4 : d.h, alto = (M.pie - M.cadera) * cel, D4 = (v?.D ?? 20) * 4, sube = (t) => 1 - (1 - t) * (1 - t), lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
+    const dormir = l.pose === "dormido", silla = l.pose === "sentado" || dormir;
+    if (!silla) {
+      // (En la tina o el columpio, como antes: se agacha, va bajando y se acomoda.)
+      const [x, y, z] = L.ancla, mitad = mez(P.agachado, L.pose, 0.55);
+      return { llegar: [[P.agachado, [x, y - 4 * cel, z - 4 * cel], "cadera", L.yaw, 105], [mitad, [x, y - 1.8 * cel, z - 1.8 * cel], "cadera", L.yaw, 105]], pararse: [] };
+    }
+    // Donde termina sentado: en la cama, primero en la orilla de enfrente (sentado, viendo hacia afuera).
+    const yaw = dormir ? 0 : L.yaw, [ex, ey, ez] = L.ancla;
+    const E = dormir ? [ex, ey + (M.medio - 2.4) * cel - 1.4 * cel, -D4 / 2 + 3 * cel] : [ex, ey, ez];
+    const fr = [Math.sin((yaw * Math.PI) / 180), -Math.cos((yaw * Math.PI) / 180)];   // hacia enfrente del asiento
+    const dist = Math.abs(yaw) < 1 ? Math.max(12, E[2] + D4 / 2 + 8) : 26;
+    const S1 = [E[0] + fr[0] * dist, yF - alto, E[2] + fr[1] * dist];
+    const ll = m._lugarDe ? this._local3d(S, m._lugarDe.lx, m._lugarDe.ly) : [S1[0] + fr[0] * 30, S1[2] + fr[1] * 30];
+    const p0 = [ll[0], yF - alto, ll[1]];
+    const pasos = (de, a, n, yw) => { const o = []; for (let i = 1; i <= n; i++) o.push([{ ...P.parado, zancada: i % 2 ? 22 : -22 }, lerp(de, a, i / (n + 1)), "cadera", yw, 75]); return o; };
+    const dx = S1[0] - p0[0], dz = S1[2] - p0[2], lejos = Math.hypot(dx, dz), nPasos = Math.max(0, Math.min(6, Math.round(lejos / 14)));
+    const haciaS1 = lejos > 6 ? (Math.atan2(dx, -dz) * 180) / Math.PI : yaw + 180;
+    /** Darse la vuelta de un lado a otro (por el lado más corto), en 1 a 3 cuadritos. */
+    const girar = (de, a, donde) => {
+      const dif = ((((a - de) % 360) + 540) % 360) - 180, n = Math.abs(dif) > 100 ? 3 : Math.abs(dif) > 30 ? 2 : Math.abs(dif) > 4 ? 1 : 0, o = [];
+      for (let i = 1; i <= n; i++) o.push([P.parado, donde, "cadera", de + (dif * i) / (n + 1), 62]);
+      return o;
+    };
+    // Camina (viendo hacia donde va) hasta enfrente del asiento, ahí se da la vuelta y baja hasta el asiento.
+    const camina = [[P.parado, p0, "cadera", haciaS1, 60], ...pasos(p0, S1, nPasos, haciaS1)];
+    const vuelta = [[P.parado, S1, "cadera", haciaS1, 60], ...girar(haciaS1, yaw, S1)];
+    const sentado = dormir ? P.sentado : L.pose, baja = [];
+    for (const t of [0.22, 0.45, 0.66, 0.84]) {
+      const pose = t <= 0.5 ? mez(P.parado, P.agachado, t / 0.5) : mez(P.agachado, sentado, (t - 0.5) / 0.5);
+      const xz = lerp(S1, E, t * t * (3 - 2 * t)), y = S1[1] + (E[1] - S1[1]) * sube(t);
+      baja.push([pose, [xz[0], y, xz[2]], "cadera", yaw, 64]);
+    }
+    const acomoda = [[sentado, [E[0], E[1] + 0.7 * cel, E[2]], "cadera", yaw, 70]];
+    // En la cama: de sentado en la orilla se va recostando de ladito hasta quedar a lo largo.
+    const acuesta = [];
+    if (dormir) {
+      const C0 = [E[0], E[1] - (M.cadera - M.centro) * cel, E[2]], R = L.pose.rodar || 90;
+      // (Las piernas se van estirando mientras se recuesta: así no se salen por enfrente de la cama.)
+      // (Y baja al colchón y se mete hacia adentro más pronto de lo que gira.)
+      const hacia = (t, tz) => [C0[0] + (L.ancla[0] - C0[0]) * t, C0[1] + (L.ancla[1] - C0[1]) * Math.sqrt(t), C0[2] + (L.ancla[2] - C0[2]) * tz];
+      acuesta.push([{ muslo: 62, rodilla: 58, brazo: 22, tronco: 10, rodar: R * 0.2 }, hacia(0.3, 0.45), "centro", 0, 80]);
+      acuesta.push([{ muslo: 36, rodilla: 44, brazo: 22, tronco: 8, rodar: R * 0.5 }, hacia(0.6, 0.8), "centro", 0, 80]);
+      acuesta.push([{ muslo: 28, rodilla: 40, brazo: 24, tronco: 2, rodar: R * 0.82 }, hacia(0.88, 1), "centro", 0, 80]);
+      acuesta.push([L.pose, [L.ancla[0], L.ancla[1] + 0.6 * cel, L.ancla[2]], "centro", 0, 70]);
+    }
+    const llegar = [...camina, ...vuelta, ...baja, ...(dormir ? [[P.sentado, E, "cadera", 0, 90], ...acuesta] : acomoda)];
+    // Pararse: al revés (se incorpora, se levanta), voltea hacia donde había llegado y camina hasta ahí.
+    const deS1 = lejos > 6 ? haciaS1 + 180 : yaw;
+    const pararse = [...(dormir ? [...acuesta.slice(0, 3).reverse(), [P.sentado, E, "cadera", 0, 80]] : []), ...baja.slice(0, 3).reverse(), [P.parado, S1, "cadera", yaw, 70], ...girar(yaw, deS1, S1), ...pasos(S1, p0, nPasos, deS1), [P.parado, p0, "cadera", deS1, 40]];
+    return { llegar, pararse };
+  }
+  /** (Fase 80) Pararse del mueble con su animación (antes de irse caminando). */
+  async _levantar3d(m) {
+    const S = m._3d;
+    if (!S || !m._3dUlt) return;
+    const tk = m._t3, cuadros = this._secuencia3d(m, S).pararse;
+    clearTimeout(m._tParp); m._cara3d = null;
+    for (const c of cuadros) {
+      if (m._t3 !== tk || m._3d !== S || !this.vivo) return;
+      const t0 = performance.now();
+      this._cuadro3d(m, ...c);
+      await this.esperar(Math.max(16, (c[4] || 62) - (performance.now() - t0)));
+    }
   }
   /** Al redibujar un mueble (se giró, se movió, cambió de color): sus monitos de bulto vuelven a su lugar. */
   _reponer3d(r) {
@@ -2409,6 +2511,7 @@ export class Casita {
   /* ═════════════ Acomodar (editar la casa) ═════════════ */
   _editar(on) {
     if (on === this.editando) return;
+    if (on) this.vista3d?.cerrar(true);   // (Fase 80: para acomodar, de vuelta al cuarto de siempre)
     this.editando = on;
     this.cerrarMenu(); this.cerrarHoja();
     this.raiz.classList.toggle("editando", on);

@@ -107,7 +107,7 @@ export const ITEMS = {
     n: "Flamenco inflable", cat: "terraza", w: 78, h: 98, y: 550, al: "boing",
     arte: () => svg(78, 98, `
       <ellipse cx="38" cy="80" rx="34" ry="15" fill="#ff86b0" ${OL}/><ellipse cx="38" cy="78" rx="20" ry="7" fill="#ffd0e2"/>
-      <path d="M56 74c10-8 10-30 4-44-4-10-16-12-20-4" stroke="#ff86b0" stroke-width="11" fill="none" stroke-linecap="round" ${OL}/><path d="M56 74c10-8 10-30 4-44-4-10-16-12-20-4" stroke="#ff9cbf" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M56 74c10-8 10-30 4-44-4-10-16-12-20-4" stroke="#ff86b0" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M56 74c10-8 10-30 4-44-4-10-16-12-20-4" stroke="#ff9cbf" stroke-width="7" fill="none" stroke-linecap="round"/>
       <circle cx="42" cy="24" r="9" fill="#ff9cbf" ${OL}/><path d="M33 24l-10 4 2 6 9-4z" fill="#fff" ${OL2}/><path d="M23 28l2 6-4-2z" fill="#3a2a35"/><circle cx="43" cy="21" r="1.6" fill="#3a2a35"/>
       <path d="M22 76q16 8 32 0" stroke="#fff" stroke-opacity=".6" stroke-width="3" fill="none" stroke-linecap="round"/>`),
   },

@@ -156,19 +156,21 @@ function hombroX(M) {
   return n ? sx / n + 0.5 : 8;
 }
 export function pintar(M, pose, o) {
-  const clave = [o.clave, pose.muslo, pose.rodilla, pose.brazo, pose.brazoD ?? "", pose.brazoDz ?? 0, pose.cabezaY ?? 0, pose.tronco, pose.rodar, o.g, o.yaw, o.ancla.map((v) => v.toFixed(1)).join(","), o.ancla3d, o.cel.toFixed(2), o.cara, o.vg?.g ?? "-", o.vg ? o.vg.OW + "x" + o.vg.OH : ""].join("|");
-  if (CUADROS.has(clave)) return CUADROS.get(clave);
+  const clave = [o.clave, pose.muslo, pose.rodilla, pose.brazo, pose.brazoD ?? "", pose.brazoDz ?? 0, pose.cabezaY ?? 0, pose.tronco, pose.rodar, pose.zancada || 0, o.g, o.yaw, o.ancla.map((v) => v.toFixed(1)).join(","), o.ancla3d, o.cel.toFixed(2), o.cara, o.vg?.g ?? "-", o.vg ? o.vg.OW + "x" + o.vg.OH : ""].join("|");
+  if (CUADROS.has(clave)) { const r = CUADROS.get(clave); if (!r.url && !o.sinUrl) r.url = r.cv.toDataURL(); return r; }
   const cel = o.cel, co = Math.cos(rad(o.g)), si = Math.sin(rad(o.g)), cy = Math.cos(rad(o.yaw || 0)), sy = Math.sin(rad(o.yaw || 0));
   const ax = 12, ay = o.ancla3d === "centro" ? M.centro : M.cadera, az = M.zc;
   const hy = M.cadera, hz = M.zc, ky = M.rodilla, sh = M.hombro;
   const xr = (p, h) => {
     // Los huesos (en cuadritos del monito): rodilla, cadera, hombro; luego el cuerpo se inclina sobre la cadera.
     if (h === "ci" || h === "cd") doblar(p, ky, hz, -pose.rodilla);
-    if (h[0] === "m" || h[0] === "c") doblar(p, hy, hz, pose.muslo);
+    // (Fase 80) Caminando: cada pierna va a su lado (una adelante y otra atrás) y los brazos al revés de las piernas.
+    const z = pose.zancada || 0;
+    if (h[0] === "m" || h[0] === "c") doblar(p, hy, hz, pose.muslo + (h[1] === "i" ? z : -z));
     // (Fase 73) El brazo derecho se puede mover aparte (para comer: baja al plato y sube a la boca).
-    if (h === "bi") doblar(p, sh, hz, pose.brazo);
+    if (h === "bi") doblar(p, sh, hz, pose.brazo - z * 0.7);
     if (h === "bd") {
-      doblar(p, sh, hz, pose.brazoD ?? pose.brazo);
+      doblar(p, sh, hz, (pose.brazoD ?? pose.brazo) + z * 0.7);
       // (Fase 73) …y girar de lado (hacia la cara): así de frente se ve que la mano sube a la boca.
       if (pose.brazoDz) {
         const hx = M._hx ?? (M._hx = hombroX(M)), a = rad(pose.brazoDz * (hx < 12.5 ? -1 : 1)), c = Math.cos(a), s = Math.sin(a), dx = p[0] - hx, dy = p[1] - sh;
@@ -273,9 +275,10 @@ export function pintar(M, pose, o) {
   }
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   cv.getContext("2d").putImageData(new ImageData(out, W, H), 0, 0);
-  const r = { url: cv.toDataURL(), x: OX, y: OY, w: W * cel, h: H * cel };
+  // (Fase 80) También el lienzo (el cuarto en 3D lo pinta directo, sin esperar a que se lea la imagen).
+  const r = { url: o.sinUrl ? "" : cv.toDataURL(), cv, x: OX, y: OY, w: W * cel, h: H * cel };
   CUADROS.set(clave, r);
-  if (CUADROS.size > 160) CUADROS.delete(CUADROS.keys().next().value);
+  if (CUADROS.size > 420) CUADROS.delete(CUADROS.keys().next().value);
   return r;
 }
 

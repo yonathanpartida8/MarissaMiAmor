@@ -61,8 +61,10 @@ const FIG = {
   punto: [".XX.", "XXXX", "XXXX", ".XX."],
   flor: [".X.", "X.X", ".X."],
 };
-export function texPared(color, patron) {
-  return css(comoUrlR(`p|${color}|${patron}|74`, 24, 24, ({ pon, caja }) => {
+/** (Fase 80) El tapiz tal cual (con su lienzo `cv`), para pintarlo también en el cuarto en 3D. */
+export function texPared(color, patron) { return css(texParedR(color, patron)); }
+export function texParedR(color, patron) {
+  return comoUrlR(`p|${color}|${patron}|74`, 24, 24, ({ pon, caja }) => {
     const B = rgb(color), L = cla(B, 0.5), L2 = cla(B, 0.78), D = osc(B, 0.955), D2 = osc(B, 0.9), S = osc(B, 0.86);
     caja(0, 0, 24, 24, B);
     // El papel: motitas finitas (no plano), siempre en el mismo lugar.
@@ -109,7 +111,7 @@ export function texPared(color, patron) {
         pon(x, y, (x + y) % 2 && (bx || by) ? mez(k, cla(B, 0.55), 0.18) : k);
       }
     }
-  }));
+  });
 }
 
 /* ── Los pisos ── */
@@ -117,8 +119,9 @@ const PISOS = {
   madera: ["#e6bf96", "#dcb288", "#b98a62", "#efcfaa"], clara: ["#f6dfc2", "#ecd2b2", "#d4b48f", "#fbead3"],
   duela: ["#d9a878", "#cf9c6b", "#9a6a46", "#e6b98b"],
 };
-export function texPiso(tipo) {
-  if (PISOS[tipo]) return css(comoUrlR(`f|${tipo}|74`, 64, 16, ({ pon }) => {
+export function texPiso(tipo) { return css(texPisoR(tipo)); }
+export function texPisoR(tipo) {
+  if (PISOS[tipo]) return (comoUrlR(`f|${tipo}|74`, 64, 16, ({ pon }) => {
     // Tablas de 4 cuadritos de ancho, de largos distintos y escalonadas: cada tabla de su tono, con su filo claro, la
     // rendija oscura entre tablas, vetas y de vez en cuando un nudito.
     const [a, b, s, g] = PISOS[tipo].map(rgb), tonos = [a, b, mez(a, b, 0.5), osc(a, 0.965)];
@@ -145,7 +148,7 @@ export function texPiso(tipo) {
       pon(nx, y0 + 1, osc(a, 0.78)); pon(nx + 1, y0 + 1, osc(a, 0.86)); pon(nx - 1, y0 + 1, osc(a, 0.92)); pon(nx, y0 + 2, osc(a, 0.92));
     }
   }));
-  if (tipo === "mosaico") return css(comoUrlR("f|mosaico|74", 16, 16, ({ pon }) => {
+  if (tipo === "mosaico") return (comoUrlR("f|mosaico|74", 16, 16, ({ pon }) => {
     const A = rgb("#ffffff"), B = rgb("#dcefff"), G = rgb("#bcd3e6"), LA = rgb("#ffffff"), SA = rgb("#e8eef5"), LB = rgb("#eaf6ff"), SB = rgb("#c9e1f4");
     for (const [x0, y0, blanco] of [[0, 0, 1], [8, 8, 1], [8, 0, 0], [0, 8, 0]]) for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
       const X = x0 + x, Y = y0 + y;
@@ -154,12 +157,12 @@ export function texPiso(tipo) {
       if (blanco && ((x === 3 && y >= 2 && y <= 4) || (y === 3 && x >= 2 && x <= 4))) pon(X, Y, x === 3 && y === 3 ? rgb("#ffd6e6") : LB);   // la florecita
     }
   }));
-  if (tipo === "alfombra") return css(comoUrlR("f|alfombra|74", 12, 12, ({ pon, caja }) => {
+  if (tipo === "alfombra") return (comoUrlR("f|alfombra|74", 12, 12, ({ pon, caja }) => {
     const A = rgb("#f6c6d8"); caja(0, 0, 12, 12, A);
     for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const h = hsh(x, y, 23); if ((x + y) % 2 === 0) pon(x, y, osc(A, 0.965)); if (h > 0.93) pon(x, y, cla(A, 0.3)); }
     figuraRelieve(pon, FIG.chico, 1, 2, cla(A, 0.35), cla(A, 0.6), osc(A, 0.9)); pon(8, 8, rgb("#ffffff")); pon(9, 8, cla(A, 0.6));
   }));
-  if (tipo === "barro") return css(comoUrlR("f|barro|74", 16, 12, ({ pon }) => {
+  if (tipo === "barro") return (comoUrlR("f|barro|74", 16, 12, ({ pon }) => {
     const A = rgb("#f0b49b"), G = rgb("#fbe0d2");
     for (let f = 0; f < 2; f++) for (let b = -1; b < 2; b++) {
       const x0 = b * 8 + (f % 2) * 4, y0 = f * 6, K = osc(A, 0.94 + hsh(b + 4, f, 29) * 0.1);
@@ -170,7 +173,7 @@ export function texPiso(tipo) {
     }
   }));
   // Pasto (también lo de afuera): matitas claras y oscuras, que se repiten sin que se note.
-  return css(comoUrlR("f|pasto|74", 24, 16, ({ pon, caja }) => {
+  return (comoUrlR("f|pasto|74", 24, 16, ({ pon, caja }) => {
     const A = rgb("#8fd59e"), D = rgb("#6fbf84"), L = rgb("#b5e8bd");
     caja(0, 0, 24, 16, A);
     for (let y = 0; y < 16; y++) for (let x = 0; x < 24; x++) if (hsh(x, y, 37) < 0.1) pon(x, y, osc(A, 0.95));
@@ -724,5 +727,5 @@ export function texPuerta(color = "#f2b1c6") {
     // La perilla.
     pon(13, 19, [255, 220, 130]); pon(14, 19, [214, 160, 70]); pon(13, 20, [214, 160, 70]); pon(14, 20, [170, 116, 60]);
   });
-  return { marco: marco.url, hoja: hoja.url };
+  return { marco: marco.url, hoja: hoja.url, marcoCv: marco.cv, hojaCv: hoja.cv };
 }

@@ -226,7 +226,11 @@ export function vistaGirada(d, e, C, g) {
   let partes = partes0;
   if (d.frente) partes = { ...partes0, quieto: conFrente(partes0.quieto, d.frente(e || {}, C)) };
   const clave = `${d.k}|${huella(partes.quieto)}|${g}|74`;
-  if (CACHE.has(clave)) return Promise.resolve({ ...CACHE.get(clave), vivo: partes.vivo });
+  // (Fase 80) Lo que viene guardado en el teléfono (IndexedDB) sólo trae la imagen de frente, sin lo hondo de cada pixel
+  // ni lo alto de cada columna: con eso no se puede sentar a nadie adentro (ni verlo en el cuarto en 3D con su monito).
+  // Esa vista se rehace completa (la imagen es la misma, así que no se nota) y se guarda la buena.
+  const ya = CACHE.get(clave);
+  if (ya && (ya.plano || ya.zb)) return Promise.resolve({ ...ya, vivo: partes.vivo });
   if (PEND.has(clave)) return PEND.get(clave).then((r) => r && { ...r, vivo: partes.vivo });
   const pr = (async () => {
     try {
@@ -481,7 +485,10 @@ export function vistaGirada(d, e, C, g) {
       const zb2 = new Float32Array(OW2 * OH2).fill(1e9);
       for (let j = 0; j < OH; j++) for (let i = 0; i < OW; i++) zb2[(j + 1) * OW2 + i + 1] = zb[j * OW + i];
       // La matriz del frente girado (de las coordenadas del dibujo a las de la vista): para la capa viva.
-      const ex = PX * (-cu * co + cz * si - X0 + 1), ey = PX * (cu * si * ELEV + cz * co * ELEV - Y0 + 1);
+      // (Fase 80) Lo vivo va a la hondura donde de verdad está el frente (la pantalla de la tele está hundida en su
+      // marco: con su perfil, no en la cara de enfrente del volumen; si no, girada se veía flotando adelante).
+      const zv = perfil ? Math.min(...perfil.map((q) => q[2])) * D : 0;
+      const ex = PX * (-cu * co + cz * si - X0 + 1 - zv * si), ey = PX * (cu * si * ELEV + cz * co * ELEV - Y0 + 1 - zv * co * ELEV);
       // De lado o de espaldas lo vivo no se pierde: va en el plano de en medio, del ancho que se ve del objeto, y DETRÁS
       // de lo quieto (así una pantalla queda tapada por el mueble y una flamita o unas hojas siguen moviéndose arriba).
       const frente = co > 0.12, kx = (co < 0 ? -1 : 1) * Math.min(1, (Math.abs(co) * W + Math.abs(si) * D) / W);
@@ -496,7 +503,7 @@ export function vistaGirada(d, e, C, g) {
         while (j0 < OH && Math.floor(Y0 + j0 + 0.5 + Zf * ELEV) < 0) j0++;
         fx = (i0 + 1) * PX; fy = (j0 + 1) * PX;
       }
-      const r = { url: oc.toDataURL(), w: OW2 * PX, h: OH2 * PX, ax: (AX - X0 + 1) * PX, ay: (AY - Y0 + 1) * PX, fx, fy, matriz: frente ? [co, -si * ELEV, 0, 1, ex, ey] : medio, frente,
+      const r = { url: oc.toDataURL(), cv: oc, w: OW2 * PX, h: OH2 * PX, ax: (AX - X0 + 1) * PX, ay: (AY - Y0 + 1) * PX, fx, fy, matriz: frente ? [co, -si * ELEV, 0, 1, ex, ey] : medio, frente,
         // (Fase 66) Para meter un monito adentro sin que se atraviese: lo hondo de cada pixel y lo alto de cada columna.
         zb: zb2, x0: X0, y0: Y0, OW: OW2, OH: OH2, W, H, D, cu, cz, tope, g };
       CACHE.set(clave, r);
